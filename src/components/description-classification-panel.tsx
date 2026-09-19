@@ -9,6 +9,9 @@ export function DescriptionClassificationPanel({
   classification,
   source,
 }: DescriptionClassificationPanelProps) {
+  const status = classification.status ?? "identified";
+  const showUncertain = status === "unsure";
+
   return (
     <div className="space-y-4" aria-live="polite">
       {source === "mock" && (
@@ -33,7 +36,17 @@ export function DescriptionClassificationPanel({
         </p>
         <p className="mt-2 text-xl font-bold text-[#1a3d2e]">
           {classification.objectName}
+          {showUncertain ? (
+            <span className="ml-2 text-sm font-semibold normal-case text-amber-900">
+              (uncertain)
+            </span>
+          ) : null}
         </p>
+        {showUncertain ? (
+          <p className="mt-2 text-sm text-black/65">
+            Best guess only — confidence {classification.confidence}%.
+          </p>
+        ) : null}
       </div>
 
       <div className="rounded-lg bg-[#1a3d2e]/10 px-4 py-4 text-sm text-[#1a3d2e]">

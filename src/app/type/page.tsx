@@ -4,8 +4,10 @@ import { useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import { classifyDescriptionFromText } from "@/lib/classify-description-client";
+import { mergeDescriptionWithClarification } from "@/lib/description-classification";
 import type { DescriptionClassification } from "@/lib/description-classification";
 
 type FlowStatus = "idle" | "loading" | "success" | "validation_error" | "api_error";
@@ -17,6 +19,34 @@ export default function TypePage() {
     useState<DescriptionClassification | null>(null);
   const [source, setSource] = useState<"live" | "mock" | null>(null);
   const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
+  const [originalInput, setOriginalInput] = useState("");
+
+  async function runClassification(
+    text: string,
+    options?: { keepPrevious?: boolean }
+  ) {
+    setStatus("loading");
+    if (!options?.keepPrevious) {
+      setClassification(null);
+      setSource(null);
+    }
+    setApiErrorMessage(null);
+
+    const result = await classifyDescriptionFromText(text);
+    if (!result.ok) {
+      setStatus(
+        result.errorMessage.includes("enter") ? "validation_error" : "api_error"
+      );
+      setApiErrorMessage(
+        result.errorMessage.includes("enter") ? null : result.errorMessage
+      );
+      return;
+    }
+
+    setClassification(result.classification);
+    setSource(result.source);
+    setStatus("success");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,24 +59,31 @@ export default function TypePage() {
       return;
     }
 
-    setStatus("loading");
+    setOriginalInput(trimmed);
+    await runClassification(trimmed);
+  }
+
+  function handleTryAgain() {
     setClassification(null);
     setSource(null);
     setApiErrorMessage(null);
-
-    const result = await classifyDescriptionFromText(trimmed);
-    if (!result.ok) {
-      setStatus(result.errorMessage.includes("enter") ? "validation_error" : "api_error");
-      setApiErrorMessage(
-        result.errorMessage.includes("enter") ? null : result.errorMessage
-      );
-      return;
-    }
-
-    setClassification(result.classification);
-    setSource(result.source);
-    setStatus("success");
+    setStatus("idle");
+    setOriginalInput("");
   }
+
+  async function handleClarification(answer: string) {
+    const merged = mergeDescriptionWithClarification(originalInput, answer);
+    setDescription(merged);
+    await runClassification(merged, { keepPrevious: true });
+  }
+
+  const showOutcomePanel =
+    (status === "success" || status === "loading") &&
+    classification &&
+    source &&
+    (classification.status === "identified" ||
+      classification.status === "unsure" ||
+      classification.status === "needs_clarification");
 
   return (
     <HopHacksShell showBack>
@@ -101,22 +138,31 @@ export default function TypePage() {
           </p>
         )}
 
-        {status === "success" && classification && source && (
+        {showOutcomePanel && (
           <div className="mt-6">
             <DescriptionClassificationPanel
               classification={classification}
               source={source}
             />
+            <ClassificationOutcomeActions
+              classification={classification}
+              busy={status === "loading"}
+              tryAgainLabel="Try again with new description"
+              onTryAgain={handleTryAgain}
+              onSubmitClarification={handleClarification}
+            />
           </div>
         )}
 
-        <Button
-          type="submit"
-          disabled={status === "loading"}
-          className="mt-6 h-11 w-full bg-black text-white hover:bg-black/90 sm:w-auto sm:min-w-[12rem]"
-        >
-          {status === "loading" ? "Classifying…" : "Classify item"}
-        </Button>
+        {classification?.status !== "needs_clarification" ? (
+          <Button
+            type="submit"
+            disabled={status === "loading"}
+            className="mt-6 h-11 w-full bg-black text-white hover:bg-black/90 sm:w-auto sm:min-w-[12rem]"
+          >
+            {status === "loading" ? "Classifying…" : "Classify item"}
+          </Button>
+        ) : null}
       </form>
     </HopHacksShell>
   );

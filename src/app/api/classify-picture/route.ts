@@ -13,9 +13,12 @@ export type ClassifyPictureResponse = {
 };
 
 export async function POST(request: Request) {
-  let body: { image?: string };
+  let body: { image?: string; supplementalText?: string };
   try {
-    body = (await request.json()) as { image?: string };
+    body = (await request.json()) as {
+      image?: string;
+      supplementalText?: string;
+    };
   } catch {
     return NextResponse.json(
       { error: "Invalid request body. Send JSON with an image field (JPEG data URL or base64)." },
@@ -39,17 +42,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  const supplementalText = body.supplementalText?.trim() ?? "";
+
   const apiKey = getGrokApiKey();
   if (!apiKey) {
     const payload: ClassifyPictureResponse = {
-      classification: mockClassifyPicture(),
+      classification: mockClassifyPicture(supplementalText || undefined),
       source: "mock",
     };
     return NextResponse.json(payload);
   }
 
   try {
-    const classification = await classifyPictureWithGrok(imageRaw);
+    const classification = await classifyPictureWithGrok(
+      imageRaw,
+      supplementalText || undefined
+    );
     const payload: ClassifyPictureResponse = {
       classification,
       source: "live",

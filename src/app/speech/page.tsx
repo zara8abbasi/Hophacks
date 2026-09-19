@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
+import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { classifyDescriptionFromText } from "@/lib/classify-description-client";
+import { mergeDescriptionWithClarification } from "@/lib/description-classification";
 import type { TranscribeSpeechConfigResponse } from "@/app/api/transcribe-speech/route";
 import type { DescriptionClassification } from "@/lib/description-classification";
 
@@ -48,6 +50,7 @@ export default function SpeechPage() {
     null
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [originalTranscript, setOriginalTranscript] = useState("");
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -87,22 +90,32 @@ export default function SpeechPage() {
     };
   }, [releaseMic]);
 
-  const runClassification = useCallback(async (text: string) => {
-    setPhase("classifying");
-    setClassification(null);
-    setClassifySource(null);
+  const runClassification = useCallback(
+    async (text: string, options?: { isInitial?: boolean; keepPrevious?: boolean }) => {
+      setPhase("classifying");
+      if (!options?.keepPrevious) {
+        setClassification(null);
+        setClassifySource(null);
+      }
+      setErrorMessage(null);
 
-    const result = await classifyDescriptionFromText(text);
-    if (!result.ok) {
-      setPhase("error");
-      setErrorMessage(result.errorMessage);
-      return;
-    }
+      const result = await classifyDescriptionFromText(text);
+      if (!result.ok) {
+        setPhase("error");
+        setErrorMessage(result.errorMessage);
+        return;
+      }
 
-    setClassification(result.classification);
-    setClassifySource(result.source);
-    setPhase("success");
-  }, []);
+      if (options?.isInitial) {
+        setOriginalTranscript(text.trim());
+      }
+
+      setClassification(result.classification);
+      setClassifySource(result.source);
+      setPhase("success");
+    },
+    []
+  );
 
   const transcribeWithElevenLabs = useCallback(async (blob: Blob) => {
     const form = new FormData();
@@ -132,7 +145,7 @@ export default function SpeechPage() {
     }
     setSttSource(success.source);
     setTranscript(text);
-    await runClassification(text);
+    await runClassification(text, { isInitial: true });
   }, [runClassification]);
 
   const stopRecording = useCallback(() => {
@@ -274,7 +287,7 @@ export default function SpeechPage() {
         if (browserText) {
           setSttSource("live");
           setTranscript(browserText);
-          await runClassification(browserText);
+          await runClassification(browserText, { isInitial: true });
           return;
         }
 
@@ -306,6 +319,7 @@ export default function SpeechPage() {
     setClassification(null);
     setClassifySource(null);
     setErrorMessage(null);
+    setOriginalTranscript("");
     chunksRef.current = [];
     browserTranscriptRef.current = "";
   }, [releaseMic]);
@@ -389,11 +403,27 @@ export default function SpeechPage() {
           </p>
         )}
 
-        {phase === "success" && classification && classifySource && (
+        {(phase === "success" || phase === "classifying") &&
+          classification &&
+          classifySource && (
           <div className="mt-6">
             <DescriptionClassificationPanel
               classification={classification}
               source={classifySource}
+            />
+            <ClassificationOutcomeActions
+              classification={classification}
+              busy={phase === "classifying"}
+              tryAgainLabel="Record again"
+              onTryAgain={resetFlow}
+              onSubmitClarification={async (answer) => {
+                const merged = mergeDescriptionWithClarification(
+                  originalTranscript || transcript,
+                  answer
+                );
+                setTranscript(merged);
+                await runClassification(merged, { keepPrevious: true });
+              }}
             />
           </div>
         )}

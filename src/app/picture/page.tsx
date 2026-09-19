@@ -3,11 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
-import type { ClassifyPictureResponse } from "@/app/api/classify-picture/route";
-import type { DescriptionClassification } from "@/lib/description-classification";
+import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
+import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
+import { classifyPictureFromDataUrl } from "@/lib/classify-picture-client";
+import {
+  mergeDescriptionWithClarification,
+  type DescriptionClassification,
+} from "@/lib/description-classification";
 
 type CameraState = "idle" | "loading" | "active" | "error" | "captured";
 type ClassifyStatus = "idle" | "loading" | "success" | "api_error";
+
+const PICTURE_CONTEXT_SEED = "Photo of item for disposal";
 
 function cameraErrorMessage(err: unknown): string {
   if (err instanceof DOMException) {
@@ -69,6 +76,7 @@ export default function PicturePage() {
     string | null
   >(null);
   const [videoReady, setVideoReady] = useState(false);
+  const [pictureContext, setPictureContext] = useState("");
   const classifyRequestIdRef = useRef(0);
   const attemptedClassifyUrlRef = useRef<string | null>(null);
 
@@ -77,6 +85,7 @@ export default function PicturePage() {
     setClassification(null);
     setSource(null);
     setClassifyErrorMessage(null);
+    setPictureContext("");
   }, []);
 
   const stopStream = useCallback(() => {
@@ -96,57 +105,38 @@ export default function PicturePage() {
     }
   }, []);
 
-  const classifyCapturedImage = useCallback(async (dataUrl: string) => {
+  const classifyCapturedImage = useCallback(
+    async (
+      dataUrl: string,
+      options?: { supplementalText?: string; keepPrevious?: boolean }
+    ) => {
       const requestId = ++classifyRequestIdRef.current;
       setClassifyStatus("loading");
-      setClassification(null);
-      setSource(null);
+      if (!options?.keepPrevious) {
+        setClassification(null);
+        setSource(null);
+      }
       setClassifyErrorMessage(null);
 
-      try {
-        const res = await fetch("/api/classify-picture", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: dataUrl }),
-        });
+      const result = await classifyPictureFromDataUrl(
+        dataUrl,
+        options?.supplementalText
+      );
 
-        let data: ClassifyPictureResponse | { error?: string };
-        try {
-          data = (await res.json()) as ClassifyPictureResponse | { error?: string };
-        } catch {
-          if (requestId !== classifyRequestIdRef.current) return;
-          setClassifyStatus("api_error");
-          setClassifyErrorMessage(
-            "The server returned an unexpected response. Try capture again."
-          );
-          return;
-        }
+      if (requestId !== classifyRequestIdRef.current) return;
 
-        if (requestId !== classifyRequestIdRef.current) return;
-
-        if (!res.ok) {
-          setClassifyStatus("api_error");
-          const errPayload = data as { error?: string };
-          setClassifyErrorMessage(
-            typeof errPayload.error === "string" && errPayload.error
-              ? errPayload.error
-              : "We couldn’t classify that photo. Check your connection and try again."
-          );
-          return;
-        }
-
-        const success = data as ClassifyPictureResponse;
-        setClassification(success.classification);
-        setSource(success.source);
-        setClassifyStatus("success");
-      } catch {
-        if (requestId !== classifyRequestIdRef.current) return;
+      if (!result.ok) {
         setClassifyStatus("api_error");
-        setClassifyErrorMessage(
-          "Something went wrong while contacting the server. Try again in a moment."
-        );
+        setClassifyErrorMessage(result.errorMessage);
+        return;
       }
-  }, []);
+
+      setClassification(result.classification);
+      setSource(result.source);
+      setClassifyStatus("success");
+    },
+    []
+  );
 
   const startCamera = useCallback(async () => {
     setErrorMessage(null);
@@ -192,6 +182,7 @@ export default function PicturePage() {
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
     stopStream();
     setPreviewUrl(dataUrl);
+    setPictureContext("");
     setCameraState("captured");
   }, [cameraState, stopStream]);
 
@@ -227,6 +218,17 @@ export default function PicturePage() {
   useEffect(() => {
     return () => stopStream();
   }, [stopStream]);
+
+  const handleRetake = useCallback(() => {
+    setPreviewUrl(null);
+    attemptedClassifyUrlRef.current = null;
+    void startCamera();
+  }, [startCamera]);
+
+  const showOutcomePanel =
+    (classifyStatus === "success" || classifyStatus === "loading") &&
+    classification &&
+    source;
 
   return (
     <HopHacksShell showBack>
@@ -307,50 +309,30 @@ export default function PicturePage() {
           </p>
         )}
 
-        {classifyStatus === "success" && classification && (
-          <div className="mt-6 space-y-4" aria-live="polite">
-            {source === "mock" && (
-              <p
-                className="rounded-lg border border-amber-600/30 bg-amber-50 px-4 py-3 text-sm text-amber-950"
-                role="status"
-              >
-                Using mock classification — add{" "}
-                <code className="text-xs">XAI_API_KEY</code> or{" "}
-                <code className="text-xs">GROK_API_KEY</code> to{" "}
-                <code className="text-xs">.env.local</code> for live Grok results.
-              </p>
-            )}
-
-            {/* TEMP(slice): remove when product no longer needs on-screen object debug print */}
-            <div
-              className="rounded-xl border-2 border-dashed border-[#1a3d2e]/40 bg-[#1a3d2e]/5 px-4 py-4"
-              data-temporary-slice="grok-object-print"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#1a3d2e]/70">
-                Temporary — identified object (remove later)
-              </p>
-              <p className="mt-2 text-xl font-bold text-[#1a3d2e]">
-                {classification.objectName}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-[#1a3d2e]/10 px-4 py-4 text-sm text-[#1a3d2e]">
-              <p className="font-semibold">Classification</p>
-              <dl className="mt-3 space-y-2">
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-[#1a3d2e]/70">
-                    Category
-                  </dt>
-                  <dd className="text-base font-medium">{classification.category}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-[#1a3d2e]/70">
-                    Class
-                  </dt>
-                  <dd className="text-base font-medium">{classification.class}</dd>
-                </div>
-              </dl>
-            </div>
+        {showOutcomePanel && (
+          <div className="mt-6">
+            <DescriptionClassificationPanel
+              classification={classification}
+              source={source}
+            />
+            <ClassificationOutcomeActions
+              classification={classification}
+              busy={classifyStatus === "loading"}
+              tryAgainLabel="Retake photo"
+              onTryAgain={handleRetake}
+              onSubmitClarification={async (answer) => {
+                if (!previewUrl) return;
+                const mergedContext = mergeDescriptionWithClarification(
+                  pictureContext || PICTURE_CONTEXT_SEED,
+                  answer
+                );
+                setPictureContext(mergedContext);
+                await classifyCapturedImage(previewUrl, {
+                  supplementalText: mergedContext,
+                  keepPrevious: true,
+                });
+              }}
+            />
           </div>
         )}
 
@@ -378,10 +360,7 @@ export default function PicturePage() {
             <>
               <Button
                 type="button"
-                onClick={() => {
-                  setPreviewUrl(null);
-                  startCamera();
-                }}
+                onClick={handleRetake}
                 variant="outline"
                 className="h-11 flex-1 border-black/20 bg-white text-black hover:bg-black/5"
                 disabled={classifyStatus === "loading"}

@@ -1,3 +1,8 @@
+export type ClassificationStatus =
+  | "identified"
+  | "unsure"
+  | "needs_clarification";
+
 export type DescriptionClassification = {
   /** Short name for the identified object (e.g. "Plastic takeout container") */
   objectName: string;
@@ -5,6 +10,13 @@ export type DescriptionClassification = {
   category: string;
   /** Finer class within the category (e.g. "Rigid plastic #5") */
   class: string;
+  /** Model confidence 0–100; values below 50 mean Grok is unsure */
+  confidence: number;
+  /** When true, disposal rules need more detail before guessing */
+  needsClarification: boolean;
+  /** Question to ask the user; empty when not needed */
+  clarifyingQuestion: string;
+  status?: ClassificationStatus;
 };
 
 export const CLASSIFICATION_JSON_SCHEMA = {
@@ -27,8 +39,36 @@ export const CLASSIFICATION_JSON_SCHEMA = {
         description:
           "More specific class or subtype within the category",
       },
+      confidence: {
+        type: "number",
+        description:
+          "Integer 0–100: how confident you are in objectName and disposal class given the input",
+      },
+      needsClarification: {
+        type: "boolean",
+        description:
+          "True when common disposal rules depend on missing facts (empty vs full containers, hazardous residue, material, liquid vs solid). Do not guess—ask instead.",
+      },
+      clarifyingQuestion: {
+        type: "string",
+        description:
+          "One short question when needsClarification is true (e.g. empty vs full paint can). Empty string when needsClarification is false.",
+      },
+      status: {
+        type: "string",
+        enum: ["identified", "unsure", "needs_clarification"],
+        description:
+          "Optional hint: identified when confident and complete; needs_clarification when needsClarification; unsure when confidence is below 50.",
+      },
     },
-    required: ["objectName", "category", "class"],
+    required: [
+      "objectName",
+      "category",
+      "class",
+      "confidence",
+      "needsClarification",
+      "clarifyingQuestion",
+    ],
     additionalProperties: false,
   },
   strict: true,
@@ -39,10 +79,76 @@ const DEFAULT_GROK_MODEL = "grok-3-mini";
 const DEFAULT_GROK_VISION_MODEL = "grok-4.6";
 const MAX_PICTURE_BASE64_CHARS = 7_000_000;
 
+const CLASSIFICATION_SYSTEM_PROMPT =
+  "You help Baltimore residents understand what they are trying to dispose of. Identify the physical object and return structured classification fields: objectName (short label), category (broad material or waste stream), class (specific subtype useful for local disposal), confidence (integer 0–100), needsClarification (boolean), clarifyingQuestion (string), and optional status (identified | unsure | needs_clarification). " +
+  "Use confidence below 50 when the input is too vague to identify the item responsibly—set status to unsure and still provide your best-guess objectName if any. " +
+  "When common disposal rules depend on facts the user did not provide (examples: paint can empty vs still full, battery type, container residue, hazardous liquid vs empty, material type), set needsClarification true, status needs_clarification, and ask one concrete clarifyingQuestion about disposal-relevant attributes—do not guess empty/full or hazardous contents. " +
+  "When needsClarification is false, clarifyingQuestion must be an empty string. Use plain English.";
+
 export function getGrokApiKey(): string | undefined {
   const key = process.env.XAI_API_KEY ?? process.env.GROK_API_KEY;
   if (!key?.trim()) return undefined;
   return key.trim();
+}
+
+function clampConfidence(value: number): number {
+  if (!Number.isFinite(value)) return 50;
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+export function normalizeClassification(
+  raw: Omit<DescriptionClassification, "status"> & {
+    status?: ClassificationStatus;
+  }
+): DescriptionClassification {
+  const confidence = clampConfidence(raw.confidence);
+  const needsClarification = Boolean(raw.needsClarification);
+  const clarifyingQuestion = (raw.clarifyingQuestion ?? "").trim();
+
+  let status: ClassificationStatus = raw.status ?? "identified";
+  if (needsClarification && clarifyingQuestion) {
+    status = "needs_clarification";
+  } else if (confidence < 50) {
+    status = "unsure";
+  } else if (status === "needs_clarification" || status === "unsure") {
+    status = "identified";
+  }
+
+  return {
+    objectName: raw.objectName.trim(),
+    category: raw.category.trim(),
+    class: raw.class.trim(),
+    confidence,
+    needsClarification: status === "needs_clarification",
+    clarifyingQuestion:
+      status === "needs_clarification" ? clarifyingQuestion : "",
+    status,
+  };
+}
+
+export function mergeDescriptionWithClarification(
+  original: string,
+  answer: string
+): string {
+  const base = original.trim();
+  const detail = answer.trim();
+  if (!detail) return base;
+  if (!base) return detail;
+  return `${base}\n\nAdditional detail from user: ${detail}`;
+}
+
+function paintHasDisposalDetail(lower: string): boolean {
+  return (
+    lower.includes("empty") ||
+    lower.includes("full") ||
+    lower.includes("dried") ||
+    lower.includes(" dry") ||
+    lower.includes("dry ") ||
+    lower.includes("no paint") ||
+    lower.includes("still has") ||
+    lower.includes("liquid") ||
+    lower.includes("wet paint")
+  );
 }
 
 export function mockClassifyDescription(
@@ -50,17 +156,32 @@ export function mockClassifyDescription(
 ): DescriptionClassification {
   const lower = description.toLowerCase();
 
+  if (/\bpaint\b/.test(lower) && !paintHasDisposalDetail(lower)) {
+    return normalizeClassification({
+      objectName: "Paint can (condition unclear)",
+      category: "Hazardous / special collection",
+      class: "Metal or plastic paint container — rules depend on empty vs full",
+      confidence: 58,
+      needsClarification: true,
+      clarifyingQuestion:
+        "Is the paint can empty or does it still have paint in it?",
+    });
+  }
+
   if (
     lower.includes("battery") ||
     lower.includes("lithium") ||
     lower.includes("aa ") ||
     lower.includes("aaa ")
   ) {
-    return {
+    return normalizeClassification({
       objectName: "Household battery",
       category: "Hazardous / special collection",
       class: "Rechargeable or alkaline battery",
-    };
+      confidence: 88,
+      needsClarification: false,
+      clarifyingQuestion: "",
+    });
   }
 
   if (
@@ -70,22 +191,28 @@ export function mockClassifyDescription(
     lower.includes("charger") ||
     lower.includes("cable")
   ) {
-    return {
+    return normalizeClassification({
       objectName: "Small electronic device or accessory",
       category: "Electronics",
       class: "E-waste (drop-off or special recycling)",
-    };
+      confidence: 85,
+      needsClarification: false,
+      clarifyingQuestion: "",
+    });
   }
 
   if (
     lower.includes("glass") &&
     (lower.includes("bottle") || lower.includes("jar"))
   ) {
-    return {
+    return normalizeClassification({
       objectName: "Glass bottle or jar",
       category: "Glass",
       class: "Container glass (rinse before recycling)",
-    };
+      confidence: 90,
+      needsClarification: false,
+      clarifyingQuestion: "",
+    });
   }
 
   if (
@@ -94,54 +221,85 @@ export function mockClassifyDescription(
     lower.includes("takeout") ||
     lower.includes("container")
   ) {
-    return {
+    return normalizeClassification({
       objectName: "Plastic food container",
       category: "Plastic",
       class: "Rigid plastic (check resin number on label)",
-    };
+      confidence: 82,
+      needsClarification: false,
+      clarifyingQuestion: "",
+    });
   }
 
   if (lower.includes("paint") || lower.includes("chemical")) {
-    return {
+    return normalizeClassification({
       objectName: "Household chemical or paint",
       category: "Hazardous / special collection",
       class: "Liquid or chemical waste (do not trash or pour)",
-    };
+      confidence: 86,
+      needsClarification: false,
+      clarifyingQuestion: "",
+    });
   }
 
   const snippet =
     description.length > 48 ? `${description.slice(0, 48).trim()}…` : description;
 
-  return {
+  return normalizeClassification({
     objectName: snippet || "Unspecified household item",
     category: "General waste / recycling (mock)",
     class: "Needs live Grok classification for a precise match",
-  };
+    confidence: 38,
+    needsClarification: false,
+    clarifyingQuestion: "",
+  });
 }
 
 function parseClassificationFromGrokContent(
   content: string
 ): DescriptionClassification {
-  let parsed: DescriptionClassification;
+  let parsed: Record<string, unknown>;
   try {
-    parsed = JSON.parse(content) as DescriptionClassification;
+    parsed = JSON.parse(content) as Record<string, unknown>;
   } catch {
     throw new Error("Grok returned classification JSON we could not parse.");
   }
 
-  if (
-    !parsed.objectName?.trim() ||
-    !parsed.category?.trim() ||
-    !parsed.class?.trim()
-  ) {
+  const objectName =
+    typeof parsed.objectName === "string" ? parsed.objectName : "";
+  const category = typeof parsed.category === "string" ? parsed.category : "";
+  const classField = typeof parsed.class === "string" ? parsed.class : "";
+
+  if (!objectName.trim() || !category.trim() || !classField.trim()) {
     throw new Error("Grok classification was missing required fields.");
   }
 
-  return {
-    objectName: parsed.objectName.trim(),
-    category: parsed.category.trim(),
-    class: parsed.class.trim(),
-  };
+  const confidence =
+    typeof parsed.confidence === "number" ? parsed.confidence : 50;
+  const needsClarification =
+    typeof parsed.needsClarification === "boolean"
+      ? parsed.needsClarification
+      : false;
+  const clarifyingQuestion =
+    typeof parsed.clarifyingQuestion === "string"
+      ? parsed.clarifyingQuestion
+      : "";
+  const status =
+    parsed.status === "identified" ||
+    parsed.status === "unsure" ||
+    parsed.status === "needs_clarification"
+      ? parsed.status
+      : undefined;
+
+  return normalizeClassification({
+    objectName,
+    category,
+    class: classField,
+    confidence,
+    needsClarification,
+    clarifyingQuestion,
+    status,
+  });
 }
 
 export async function classifyDescriptionWithGrok(
@@ -166,8 +324,7 @@ export async function classifyDescriptionWithGrok(
       messages: [
         {
           role: "system",
-          content:
-            "You help Baltimore residents understand what they are trying to dispose of. From the user's description, identify the physical object and return a structured classification with objectName (short label), category (broad material or waste stream), and class (more specific subtype). Use plain English. If the description is vague, make your best reasonable guess and reflect uncertainty in the class field.",
+          content: CLASSIFICATION_SYSTEM_PROMPT,
         },
         {
           role: "user",
@@ -218,20 +375,34 @@ export function normalizePictureDataUrl(input: string): string {
   return `data:image/jpeg;base64,${trimmed}`;
 }
 
-export function mockClassifyPicture(): DescriptionClassification {
-  return {
+export function mockClassifyPicture(
+  supplementalText?: string
+): DescriptionClassification {
+  const detail = supplementalText?.trim();
+  if (detail) {
+    return mockClassifyDescription(
+      mergeDescriptionWithClarification("Photo of item for disposal", detail)
+    );
+  }
+
+  return normalizeClassification({
     objectName: "Item in photo (mock)",
     category: "General waste / recycling (mock)",
     class: "Needs live Grok vision for a precise match",
-  };
+    confidence: 42,
+    needsClarification: false,
+    clarifyingQuestion: "",
+  });
 }
 
 export async function classifyPictureWithGrok(
-  imageInput: string
+  imageInput: string,
+  supplementalText?: string
 ): Promise<DescriptionClassification> {
   const apiKey = getGrokApiKey();
+  const detail = supplementalText?.trim();
   if (!apiKey) {
-    return mockClassifyPicture();
+    return mockClassifyPicture(detail);
   }
 
   const dataUrl = normalizePictureDataUrl(imageInput);
@@ -241,6 +412,15 @@ export async function classifyPictureWithGrok(
 
   const model =
     process.env.GROK_VISION_MODEL?.trim() || DEFAULT_GROK_VISION_MODEL;
+
+  const userTextParts = [
+    "Identify the primary item in this photo that someone would want to throw away or recycle, then classify it.",
+  ];
+  if (detail) {
+    userTextParts.push(
+      `The user also provided this clarification about the photo: ${detail}`
+    );
+  }
 
   const response = await fetch(XAI_CHAT_URL, {
     method: "POST",
@@ -255,7 +435,8 @@ export async function classifyPictureWithGrok(
         {
           role: "system",
           content:
-            "You help Baltimore residents understand what they are trying to dispose of. From the photo, identify the main disposable object in frame and return a structured classification with objectName (short label), category (broad material or waste stream), and class (more specific subtype). Use plain English. If the image is unclear, make your best reasonable guess and reflect uncertainty in the class field.",
+            CLASSIFICATION_SYSTEM_PROMPT +
+            " Use the photo as the primary signal; treat any user clarification text as additional facts about the same item.",
         },
         {
           role: "user",
@@ -266,7 +447,7 @@ export async function classifyPictureWithGrok(
             },
             {
               type: "text",
-              text: "Identify the primary item in this photo that someone would want to throw away or recycle, then classify it.",
+              text: userTextParts.join("\n\n"),
             },
           ],
         },
@@ -279,9 +460,9 @@ export async function classifyPictureWithGrok(
   });
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
+    const detailText = await response.text().catch(() => "");
     throw new Error(
-      `Grok API error (${response.status})${detail ? `: ${detail.slice(0, 200)}` : ""}`
+      `Grok API error (${response.status})${detailText ? `: ${detailText.slice(0, 200)}` : ""}`
     );
   }
 
