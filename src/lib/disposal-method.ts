@@ -14,6 +14,11 @@ export type DisposalMethodResult = {
   alsoMentionDropOff: boolean;
 };
 
+/** Only curbside trash/recycling streams use weekly cart collection days. */
+export function isCurbsideDisposalMethod(method: DisposalMethod): boolean {
+  return method === "curbside_trash" || method === "curbside_recycling";
+}
+
 function haystack(c: DescriptionClassification): string {
   return `${c.objectName} ${c.category} ${c.class}`.toLowerCase();
 }

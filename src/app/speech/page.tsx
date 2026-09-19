@@ -8,7 +8,9 @@ import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guida
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { classifyDescriptionFromText } from "@/lib/classify-description-client";
 import {
+  classificationAfterDeclinedClarification,
   isClassificationReadyForDisposal,
+  isDeclinedClarificationAnswer,
   mergeDescriptionWithClarification,
 } from "@/lib/description-classification";
 import type { TranscribeSpeechConfigResponse } from "@/app/api/transcribe-speech/route";
@@ -421,6 +423,13 @@ export default function SpeechPage() {
               tryAgainLabel="Record again"
               onTryAgain={resetFlow}
               onSubmitClarification={async (answer) => {
+                if (classification && isDeclinedClarificationAnswer(answer)) {
+                  setClassification(
+                    classificationAfterDeclinedClarification(classification)
+                  );
+                  setPhase("success");
+                  return;
+                }
                 const merged = mergeDescriptionWithClarification(
                   originalTranscript || transcript,
                   answer

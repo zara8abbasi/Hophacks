@@ -9,7 +9,9 @@ import { ClassificationOutcomeActions } from "@/components/classification-outcom
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import { classifyDescriptionFromText } from "@/lib/classify-description-client";
 import {
+  classificationAfterDeclinedClarification,
   isClassificationReadyForDisposal,
+  isDeclinedClarificationAnswer,
   mergeDescriptionWithClarification,
 } from "@/lib/description-classification";
 import type { DescriptionClassification } from "@/lib/description-classification";
@@ -76,6 +78,11 @@ export default function TypePage() {
   }
 
   async function handleClarification(answer: string) {
+    if (classification && isDeclinedClarificationAnswer(answer)) {
+      setClassification(classificationAfterDeclinedClarification(classification));
+      setStatus("success");
+      return;
+    }
     const merged = mergeDescriptionWithClarification(originalInput, answer);
     setDescription(merged);
     await runClassification(merged, { keepPrevious: true });

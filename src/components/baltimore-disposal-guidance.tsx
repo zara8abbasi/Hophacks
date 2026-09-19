@@ -9,6 +9,10 @@ import {
   type DisposalGuidanceClientResult,
 } from "@/lib/disposal-guidance-client";
 import type { DisposalGuidanceResponse } from "@/app/api/disposal-guidance/route";
+import {
+  isCurbsideDisposalMethod,
+  resolveDisposalMethod,
+} from "@/lib/disposal-method";
 
 type BaltimoreDisposalGuidanceProps = {
   classification: DescriptionClassification;
@@ -19,6 +23,9 @@ type GeoStatus = "idle" | "requesting" | "denied" | "error" | "ready";
 export function BaltimoreDisposalGuidance({
   classification,
 }: BaltimoreDisposalGuidanceProps) {
+  const disposalPreview = resolveDisposalMethod(classification);
+  const showCollectionDays = isCurbsideDisposalMethod(disposalPreview.method);
+
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +107,11 @@ export function BaltimoreDisposalGuidance({
         </p>
         <p className="mt-1 text-sm text-black/70">
           Based on your item classification — use your location or add your
-          address for collection days and the nearest drop-off center.
+          address for the nearest drop-off center
+          {showCollectionDays
+            ? " and your curbside collection days"
+            : ", hours, and drop-off alerts"}
+          .
         </p>
       </div>
 
@@ -153,28 +164,32 @@ export function BaltimoreDisposalGuidance({
             <p className="text-xs text-black/55">{guidance.dataLimitationNote}</p>
           )}
 
-          <section>
-            <p className="font-semibold text-[#1a3d2e]">Collection days</p>
-            {guidance.schedule.ok ? (
-              <ul className="mt-2 list-inside list-disc space-y-1 text-black/80">
-                <li>
-                  <span className="font-medium">Trash:</span>{" "}
-                  {guidance.schedule.trashDay}
-                </li>
-                <li>
-                  <span className="font-medium">Recycling:</span>{" "}
-                  {guidance.schedule.recycDay}
-                </li>
-                {guidance.schedule.daytext ? (
-                  <li className="list-none pl-0 text-black/65">
-                    {guidance.schedule.daytext}
+          {isCurbsideDisposalMethod(guidance.disposal.method) ? (
+            <section>
+              <p className="font-semibold text-[#1a3d2e]">Collection days</p>
+              {guidance.schedule.ok ? (
+                <ul className="mt-2 list-inside list-disc space-y-1 text-black/80">
+                  <li>
+                    <span className="font-medium">Trash:</span>{" "}
+                    {guidance.schedule.trashDay}
                   </li>
-                ) : null}
-              </ul>
-            ) : (
-              <p className="mt-2 text-amber-900">{guidance.schedule.message}</p>
-            )}
-          </section>
+                  <li>
+                    <span className="font-medium">Recycling:</span>{" "}
+                    {guidance.schedule.recycDay}
+                  </li>
+                  {guidance.schedule.daytext ? (
+                    <li className="list-none pl-0 text-black/65">
+                      {guidance.schedule.daytext}
+                    </li>
+                  ) : null}
+                </ul>
+              ) : (
+                <p className="mt-2 text-amber-900">
+                  {guidance.schedule.message}
+                </p>
+              )}
+            </section>
+          ) : null}
 
           <section>
             <p className="font-semibold text-[#1a3d2e]">
@@ -265,7 +280,11 @@ export function BaltimoreDisposalGuidance({
         }
         className="h-11 w-full bg-black text-white hover:bg-black/90 sm:w-auto sm:min-w-[12rem]"
       >
-        {loading ? "Looking up…" : "Get collection & drop-off info"}
+        {loading
+          ? "Looking up…"
+          : showCollectionDays
+            ? "Get collection & drop-off info"
+            : "Get drop-off info"}
       </Button>
     </div>
   );

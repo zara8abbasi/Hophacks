@@ -83,6 +83,7 @@ const CLASSIFICATION_SYSTEM_PROMPT =
   "You help Baltimore residents understand what they are trying to dispose of. Identify the physical object and return structured classification fields: objectName (short label), category (broad material or waste stream), class (specific subtype useful for local disposal), confidence (integer 0–100), needsClarification (boolean), clarifyingQuestion (string), and optional status (identified | unsure | needs_clarification). " +
   "Use confidence below 50 when the input is too vague to identify the item responsibly—set status to unsure and still provide your best-guess objectName if any. " +
   "When common disposal rules depend on facts the user did not provide (examples: paint can empty vs still full, battery type, container residue, hazardous liquid vs empty, material type), set needsClarification true, status needs_clarification, and ask one concrete clarifyingQuestion about disposal-relevant attributes—do not guess empty/full or hazardous contents. " +
+  "If the user says they do not know or cannot answer a clarifying detail, classify at the broader category level (e.g. paint / HHW) and prefer the stricter disposal path (drop-off, HHW)—never assume curbside trash or recycling when facts are missing. " +
   "When needsClarification is false, clarifyingQuestion must be an empty string. Use plain English.";
 
 export function getGrokApiKey(): string | undefined {
@@ -130,6 +131,91 @@ export function isClassificationReadyForDisposal(
   classification: DescriptionClassification
 ): boolean {
   return (classification.status ?? "identified") === "identified";
+}
+
+export const CLARIFICATION_DONT_KNOW_ANSWER = "I don't know";
+
+export function isDeclinedClarificationAnswer(answer: string): boolean {
+  const normalized = answer
+    .trim()
+    .toLowerCase()
+    .replace(/\u2019/g, "'")
+    .replace(/\s+/g, " ");
+  if (!normalized) return false;
+  return (
+    normalized === "i don't know" ||
+    normalized === "i dont know" ||
+    normalized === "don't know" ||
+    normalized === "dont know" ||
+    normalized === "not sure" ||
+    normalized === "unsure" ||
+    normalized === "no idea" ||
+    normalized === "idk"
+  );
+}
+
+/**
+ * When the user cannot answer a clarifying question, broaden to category-level
+ * guidance and assume the stricter disposal path (drop-off / HHW, not curbside).
+ */
+export function classificationAfterDeclinedClarification(
+  prior: DescriptionClassification
+): DescriptionClassification {
+  const hay = `${prior.objectName} ${prior.category} ${prior.class}`.toLowerCase();
+
+  let objectName = prior.objectName;
+  let category = prior.category;
+  let classField = prior.class;
+
+  if (/\bpaint\b/.test(hay)) {
+    objectName = "Paint or paint container (condition unknown)";
+    category = "Household hazardous waste (HHW)";
+    classField =
+      "Paint — subtype unknown; treat as HHW and use drop-off collection, not curbside trash or recycling";
+  } else if (
+    /\b(battery|batteries|lithium|lead-acid)\b/.test(hay)
+  ) {
+    objectName = prior.objectName.includes("battery")
+      ? prior.objectName
+      : "Battery (type unknown)";
+    category = "Hazardous / special collection";
+    classField =
+      "Battery — assume rechargeable or hazardous; citizen drop-off center, not curbside";
+  } else if (
+    /\b(e-?waste|electronics|television|tv\b|monitor|computer|laptop|phone|tablet)\b/.test(
+      hay
+    )
+  ) {
+    objectName = prior.objectName || "Electronic item";
+    category = "Electronics / e-waste";
+    classField =
+      "Electronics — drop-off or e-waste program; do not place in recycling cart";
+  } else if (
+    /\b(chemical|pesticide|herbicide|aerosol|propane|oil\b|hazardous|hhw)\b/.test(
+      hay
+    )
+  ) {
+    category = "Household hazardous waste (HHW)";
+    classField =
+      "Household hazardous material — HHW drop-off only; never curbside or down the drain";
+  } else {
+    const broadCategory = prior.category.trim() || "Special waste";
+    category = broadCategory;
+    classField = `${broadCategory} — details unknown; use drop-off or city guidance, not curbside, until confirmed`;
+    if (!objectName.trim()) {
+      objectName = "Household item (details unknown)";
+    }
+  }
+
+  return normalizeClassification({
+    objectName,
+    category,
+    class: classField,
+    confidence: Math.max(50, Math.min(prior.confidence, 55)),
+    needsClarification: false,
+    clarifyingQuestion: "",
+    status: "identified",
+  });
 }
 
 export function mergeDescriptionWithClarification(

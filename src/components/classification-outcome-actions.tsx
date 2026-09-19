@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { DescriptionClassification } from "@/lib/description-classification";
+import {
+  CLARIFICATION_DONT_KNOW_ANSWER,
+  type DescriptionClassification,
+} from "@/lib/description-classification";
 
 type ClassificationOutcomeActionsProps = {
   classification: DescriptionClassification;
@@ -38,17 +41,29 @@ export function ClassificationOutcomeActions({
           {classification.confidence}%).
         </p>
         <p className="text-sm text-black/70">
-          Add more detail about material, condition, or labels—or try again with
-          a clearer description.
+          Add more detail about material, condition, or labels—or choose
+          &ldquo;I don&apos;t know&rdquo; for cautious drop-off guidance for the
+          broader category.
         </p>
-        <Button
-          type="button"
-          onClick={onTryAgain}
-          disabled={busy}
-          className="h-11 w-full bg-black text-white hover:bg-black/90 sm:w-auto sm:min-w-[12rem]"
-        >
-          {tryAgainLabel}
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => void onSubmitClarification(CLARIFICATION_DONT_KNOW_ANSWER)}
+            className="h-11 flex-1 border-[#1a3d2e]/30 bg-white text-[#1a3d2e] hover:bg-[#1a3d2e]/5"
+          >
+            I don&apos;t know
+          </Button>
+          <Button
+            type="button"
+            onClick={onTryAgain}
+            disabled={busy}
+            className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+          >
+            {tryAgainLabel}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -73,21 +88,30 @@ export function ClassificationOutcomeActions({
         disabled={busy}
         className="border-black/15 bg-white text-base"
       />
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button
           type="button"
           disabled={busy || !clarificationAnswer.trim()}
           onClick={() => void onSubmitClarification(clarificationAnswer.trim())}
-          className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+          className="h-11 flex-1 bg-black text-white hover:bg-black/90 sm:min-w-[10rem]"
         >
           {busy ? "Classifying…" : "Submit answer"}
         </Button>
         <Button
           type="button"
           variant="outline"
+          disabled={busy}
+          onClick={() => void onSubmitClarification(CLARIFICATION_DONT_KNOW_ANSWER)}
+          className="h-11 flex-1 border-[#1a3d2e]/30 bg-white text-[#1a3d2e] hover:bg-[#1a3d2e]/5 sm:min-w-[10rem]"
+        >
+          I don&apos;t know
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
           onClick={onTryAgain}
           disabled={busy}
-          className="h-11 flex-1 border-black/20 bg-white text-black"
+          className="h-11 flex-1 border-black/20 bg-white text-black sm:min-w-[10rem]"
         >
           {tryAgainLabel}
         </Button>

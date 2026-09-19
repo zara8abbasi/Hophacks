@@ -8,7 +8,9 @@ import { ClassificationOutcomeActions } from "@/components/classification-outcom
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import { classifyPictureFromDataUrl } from "@/lib/classify-picture-client";
 import {
+  classificationAfterDeclinedClarification,
   isClassificationReadyForDisposal,
+  isDeclinedClarificationAnswer,
   mergeDescriptionWithClarification,
   type DescriptionClassification,
 } from "@/lib/description-classification";
@@ -324,6 +326,13 @@ export default function PicturePage() {
               onTryAgain={handleRetake}
               onSubmitClarification={async (answer) => {
                 if (!previewUrl) return;
+                if (classification && isDeclinedClarificationAnswer(answer)) {
+                  setClassification(
+                    classificationAfterDeclinedClarification(classification)
+                  );
+                  setClassifyStatus("success");
+                  return;
+                }
                 const mergedContext = mergeDescriptionWithClarification(
                   pictureContext || PICTURE_CONTEXT_SEED,
                   answer
