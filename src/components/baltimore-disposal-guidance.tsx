@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  addressBubbleLeadClass,
-  addressBubbleTitleClass,
-  addressInputClass,
-  addressLocationBubbleClass,
-  btnOutlineForestLgClass,
-  btnPrimaryLgClass,
+  btnOutlineForestClass,
+  btnPrimaryClass,
+  insetPanelClass,
 } from "@/lib/hophacks-ui";
 import type { DescriptionClassification } from "@/lib/description-classification";
 import {
@@ -166,16 +163,18 @@ export function BaltimoreDisposalGuidance({
 
   return (
     <div
-      className={`space-y-5 sm:space-y-6 ${addressLocationBubbleClass}${
-        placement === "default" ? " mt-6" : ""
-      }`}
+      className={
+        placement === "top"
+          ? `space-y-4 ${insetPanelClass} px-4 py-4`
+          : "mt-6 space-y-4 rounded-xl border border-[var(--litter-forest)]/15 bg-white px-4 py-4 shadow-sm"
+      }
       aria-live="polite"
     >
       <div>
-        <p className={addressBubbleTitleClass}>
+        <p className="text-sm font-semibold text-[var(--litter-forest)]">
           {placement === "top" ? "Your location" : "Baltimore disposal next steps"}
         </p>
-        <p className={addressBubbleLeadClass}>
+        <p className="mt-1 text-sm text-black/70">
           Use your location or enter a Baltimore address for the nearest drop-off
           center
           {showCollectionDays
@@ -187,13 +186,13 @@ export function BaltimoreDisposalGuidance({
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Button
           type="button"
           variant="outline"
           disabled={loading || geoStatus === "requesting"}
           onClick={() => requestGeolocation()}
-          className={`w-full sm:w-auto sm:min-w-[14rem] ${btnOutlineForestLgClass}`}
+          className={btnOutlineForestClass}
         >
           {geoStatus === "requesting"
             ? "Getting location…"
@@ -202,29 +201,24 @@ export function BaltimoreDisposalGuidance({
               : "Use my location"}
         </Button>
         {geoMessage && (
-          <p className="text-sm text-black/65" role="status">{geoMessage}</p>
+          <p className="text-xs text-black/60" role="status">{geoMessage}</p>
         )}
       </div>
 
-      <div className="space-y-3">
-        <label
-          className="block text-base font-semibold text-[var(--litter-forest)] sm:text-lg"
-          htmlFor="baltimore-address"
-        >
-          Baltimore address (if you skip GPS)
-        </label>
-        <Input
-          id="baltimore-address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="Example: 100 N Holliday St, Baltimore, MD"
-          disabled={loading}
-          className={addressInputClass}
-        />
-      </div>
+      <label className="block text-sm font-medium" htmlFor="baltimore-address">
+        Baltimore address (if you skip GPS)
+      </label>
+      <Input
+        id="baltimore-address"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+        placeholder="Example: 100 N Holliday St, Baltimore, MD"
+        disabled={loading}
+        className="border-black/15 bg-white text-base"
+      />
 
       {error && (
-        <p className="text-base text-red-700" role="alert">{error}</p>
+        <p className="text-sm text-red-700" role="alert">{error}</p>
       )}
 
       <Button
@@ -233,7 +227,7 @@ export function BaltimoreDisposalGuidance({
         onClick={() =>
           void loadGuidance({ mode: "address", address: address.trim() })
         }
-        className={`w-full sm:w-auto sm:min-w-[16rem] ${btnPrimaryLgClass}`}
+        className={`w-full sm:w-auto sm:min-w-[12rem] ${btnPrimaryClass}`}
       >
         {loading
           ? "Looking up…"

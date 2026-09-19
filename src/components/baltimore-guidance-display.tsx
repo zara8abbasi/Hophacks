@@ -1,5 +1,10 @@
 import type { DisposalGuidanceResponse } from "@/app/api/disposal-guidance/route";
 import { isCurbsideDisposalMethod } from "@/lib/disposal-method";
+import {
+  dropOffCenterCardClass,
+  dropOffCenterNameClass,
+  sectionLabelClass,
+} from "@/lib/hophacks-ui";
 
 type BaltimoreGuidanceDisplayProps = {
   guidance: DisposalGuidanceResponse;
@@ -82,18 +87,22 @@ export function BaltimoreGuidanceDisplay({
         </section>
       ) : null}
 
-      <section>
-        <p className="font-semibold text-[var(--litter-forest)]">Nearest drop-off center</p>
+      <section className={dropOffCenterCardClass} aria-labelledby="nearest-drop-off-heading">
+        <p id="nearest-drop-off-heading" className={sectionLabelClass}>
+          Nearest drop-off center
+        </p>
         {guidance.nearestCenter.ok ? (
-          <div className="mt-2 space-y-2 text-black/80">
-            <p className="font-medium">{guidance.nearestCenter.name}</p>
-            <p>{guidance.nearestCenter.address}</p>
+          <div className="mt-3 space-y-2.5 text-sm text-black/80 sm:text-base">
+            <p className={dropOffCenterNameClass}>{guidance.nearestCenter.name}</p>
+            <p className="text-base font-medium leading-snug text-[#1a2e24] sm:text-lg">
+              {guidance.nearestCenter.address}
+            </p>
             {guidance.nearestCenter.hoursSummary ? (
-              <p className="text-black/60">
+              <p className="text-black/65">
                 Posted hours: {guidance.nearestCenter.hoursSummary}
               </p>
             ) : (
-              <p className="text-black/60">
+              <p className="text-black/65">
                 Hours for this site are not on the city&apos;s five-center
                 residential list — confirm on the city site before visiting.
               </p>
@@ -106,13 +115,13 @@ export function BaltimoreGuidanceDisplay({
               href={guidance.nearestCenter.directionsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex text-sm font-medium text-[var(--litter-forest)] underline decoration-[var(--litter-forest)]/30 underline-offset-4 hover:decoration-[var(--litter-forest)]"
+              className="inline-flex text-sm font-semibold text-[var(--litter-forest)] underline decoration-[var(--litter-forest)]/30 underline-offset-4 hover:decoration-[var(--litter-forest)] sm:text-base"
             >
               Open directions in Google Maps
             </a>
           </div>
         ) : (
-          <p className="mt-2 text-amber-900">
+          <p className="mt-3 text-sm text-amber-900 sm:text-base">
             {guidance.nearestCenter.message}
           </p>
         )}
