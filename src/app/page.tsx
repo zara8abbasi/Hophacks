@@ -102,7 +102,7 @@ export default function Home() {
               <Link
                 key={href}
                 href={href}
-                className="flex w-full max-w-md min-h-[3.75rem] items-center justify-center rounded-full bg-white px-8 py-4 text-center text-lg font-semibold shadow-sm transition hover:bg-[#f7f7f5] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-[4.25rem] sm:text-xl"
+                className="flex w-full max-w-md min-h-[3.75rem] items-center justify-center rounded-full bg-white px-8 py-4 text-center text-lg font-semibold shadow-[0_8px_24px_rgba(26,61,46,0.32)] transition hover:bg-[#f7f7f5] hover:shadow-[0_10px_28px_rgba(26,61,46,0.38)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-[4.25rem] sm:text-xl"
                 style={{
                   color: FOREST,
                   outlineColor: FOREST,
