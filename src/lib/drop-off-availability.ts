@@ -129,11 +129,11 @@ function nextCenterOpenWindow(
 function firstWeekdayOfMonth(
   year: number,
   month: number,
-  weekday: string,
-  searchFrom: Date
+  weekday: string
 ): number | null {
-  for (let i = 0; i < 45; i++) {
-    const d = new Date(searchFrom.getTime() + i * 24 * 60 * 60 * 1000);
+  const anchor = new Date(Date.UTC(year, month - 1, 1, 18, 0, 0));
+  for (let i = 0; i < 40; i++) {
+    const d = new Date(anchor.getTime() + i * 24 * 60 * 60 * 1000);
     const p = zonedParts(d);
     if (p.year > year || (p.year === year && p.month > month)) break;
     if (p.year === year && p.month === month && p.weekday === weekday) {
@@ -179,23 +179,46 @@ function nextHhwWeekend(from: Date): {
   const official = loadBaltimoreDropOffOfficial();
   if (!official) return null;
 
-  const start = new Date(from.getTime());
-  for (let i = 0; i < 400; i++) {
-    const d = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
-    const { weekday, year, month } = zonedParts(d);
-    if (month < 6 || month > 12) continue;
-    if (weekday !== "friday") continue;
+  const startParts = zonedParts(from);
+  let year = startParts.year;
+  let month = startParts.month;
 
-    const firstFri = firstWeekdayOfMonth(year, month, "friday", d);
-    const { day } = zonedParts(d);
-    if (firstFri === null || day !== firstFri) continue;
+  for (let m = 0; m < 24; m++) {
+    if (month < 6 || month > 12) {
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+      continue;
+    }
 
-    const saturday = new Date(d.getTime() + 24 * 60 * 60 * 1000);
-    const satParts = zonedParts(saturday);
-    if (satParts.month !== month) continue;
+    const firstFri = firstWeekdayOfMonth(year, month, "friday");
+    const firstSat = firstWeekdayOfMonth(year, month, "saturday");
+    if (firstFri === null || firstSat === null) {
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+      continue;
+    }
 
+    const fridayAt = new Date(
+      Date.UTC(year, month - 1, firstFri, 18, 0, 0)
+    );
+    if (fridayAt.getTime() < from.getTime() - 24 * 60 * 60 * 1000) {
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+      continue;
+    }
+
+    const saturday = new Date(fridayAt.getTime() + 24 * 60 * 60 * 1000);
     const hoursLabel = hhwHoursLabelForMonth(month, official);
-    return { friday: d, saturday, hoursLabel };
+    return { friday: fridayAt, saturday, hoursLabel };
   }
   return null;
 }
@@ -203,13 +226,12 @@ function nextHhwWeekend(from: Date): {
 function isHhwCollectionDay(at: Date): boolean {
   const { weekday, year, month, day } = zonedParts(at);
   if (month < 6 || month > 12) return false;
-  const anchor = new Date(at.getTime() - 14 * 24 * 60 * 60 * 1000);
   if (weekday === "friday") {
-    const firstFri = firstWeekdayOfMonth(year, month, "friday", anchor);
+    const firstFri = firstWeekdayOfMonth(year, month, "friday");
     return firstFri !== null && day === firstFri;
   }
   if (weekday === "saturday") {
-    const firstSat = firstWeekdayOfMonth(year, month, "saturday", anchor);
+    const firstSat = firstWeekdayOfMonth(year, month, "saturday");
     return firstSat !== null && day === firstSat;
   }
   return false;
