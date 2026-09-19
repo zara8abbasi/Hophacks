@@ -4,9 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
+import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guidance";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { classifyDescriptionFromText } from "@/lib/classify-description-client";
-import { mergeDescriptionWithClarification } from "@/lib/description-classification";
+import {
+  isClassificationReadyForDisposal,
+  mergeDescriptionWithClarification,
+} from "@/lib/description-classification";
 import type { TranscribeSpeechConfigResponse } from "@/app/api/transcribe-speech/route";
 import type { DescriptionClassification } from "@/lib/description-classification";
 
@@ -425,6 +429,9 @@ export default function SpeechPage() {
                 await runClassification(merged, { keepPrevious: true });
               }}
             />
+            {isClassificationReadyForDisposal(classification) ? (
+              <BaltimoreDisposalGuidance classification={classification} />
+            ) : null}
           </div>
         )}
 

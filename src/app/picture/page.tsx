@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
+import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guidance";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import { classifyPictureFromDataUrl } from "@/lib/classify-picture-client";
 import {
+  isClassificationReadyForDisposal,
   mergeDescriptionWithClarification,
   type DescriptionClassification,
 } from "@/lib/description-classification";
@@ -333,6 +335,9 @@ export default function PicturePage() {
                 });
               }}
             />
+            {isClassificationReadyForDisposal(classification) ? (
+              <BaltimoreDisposalGuidance classification={classification} />
+            ) : null}
           </div>
         )}
 

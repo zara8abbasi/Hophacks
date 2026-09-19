@@ -4,10 +4,14 @@ import { useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guidance";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import { classifyDescriptionFromText } from "@/lib/classify-description-client";
-import { mergeDescriptionWithClarification } from "@/lib/description-classification";
+import {
+  isClassificationReadyForDisposal,
+  mergeDescriptionWithClarification,
+} from "@/lib/description-classification";
 import type { DescriptionClassification } from "@/lib/description-classification";
 
 type FlowStatus = "idle" | "loading" | "success" | "validation_error" | "api_error";
@@ -151,6 +155,9 @@ export default function TypePage() {
               onTryAgain={handleTryAgain}
               onSubmitClarification={handleClarification}
             />
+            {isClassificationReadyForDisposal(classification) ? (
+              <BaltimoreDisposalGuidance classification={classification} />
+            ) : null}
           </div>
         )}
 

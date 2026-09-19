@@ -126,6 +126,12 @@ export function normalizeClassification(
   };
 }
 
+export function isClassificationReadyForDisposal(
+  classification: DescriptionClassification
+): boolean {
+  return (classification.status ?? "identified") === "identified";
+}
+
 export function mergeDescriptionWithClarification(
   original: string,
   answer: string
