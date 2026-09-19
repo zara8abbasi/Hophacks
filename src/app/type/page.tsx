@@ -4,7 +4,8 @@ import { useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import type { ClassifyDescriptionResponse } from "@/app/api/classify-description/route";
+import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
+import { classifyDescriptionFromText } from "@/lib/classify-description-client";
 import type { DescriptionClassification } from "@/lib/description-classification";
 
 type FlowStatus = "idle" | "loading" | "success" | "validation_error" | "api_error";
@@ -33,38 +34,18 @@ export default function TypePage() {
     setSource(null);
     setApiErrorMessage(null);
 
-    try {
-      const res = await fetch("/api/classify-description", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: trimmed }),
-      });
-
-      const data = (await res.json()) as
-        | ClassifyDescriptionResponse
-        | { error?: string };
-
-      if (!res.ok) {
-        setStatus("api_error");
-        const errPayload = data as { error?: string };
-        setApiErrorMessage(
-          typeof errPayload.error === "string" && errPayload.error
-            ? errPayload.error
-            : "We couldn’t classify that description. Check your connection and try again."
-        );
-        return;
-      }
-
-      const success = data as ClassifyDescriptionResponse;
-      setClassification(success.classification);
-      setSource(success.source);
-      setStatus("success");
-    } catch {
-      setStatus("api_error");
+    const result = await classifyDescriptionFromText(trimmed);
+    if (!result.ok) {
+      setStatus(result.errorMessage.includes("enter") ? "validation_error" : "api_error");
       setApiErrorMessage(
-        "Something went wrong while contacting the server. Try again in a moment."
+        result.errorMessage.includes("enter") ? null : result.errorMessage
       );
+      return;
     }
+
+    setClassification(result.classification);
+    setSource(result.source);
+    setStatus("success");
   }
 
   return (
@@ -120,50 +101,12 @@ export default function TypePage() {
           </p>
         )}
 
-        {status === "success" && classification && (
-          <div className="mt-6 space-y-4" aria-live="polite">
-            {source === "mock" && (
-              <p
-                className="rounded-lg border border-amber-600/30 bg-amber-50 px-4 py-3 text-sm text-amber-950"
-                role="status"
-              >
-                Using mock classification — add{" "}
-                <code className="text-xs">XAI_API_KEY</code> or{" "}
-                <code className="text-xs">GROK_API_KEY</code> to{" "}
-                <code className="text-xs">.env.local</code> for live Grok results.
-              </p>
-            )}
-
-            {/* TEMP(slice): remove when product no longer needs on-screen object debug print */}
-            <div
-              className="rounded-xl border-2 border-dashed border-[#1a3d2e]/40 bg-[#1a3d2e]/5 px-4 py-4"
-              data-temporary-slice="grok-object-print"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#1a3d2e]/70">
-                Temporary — identified object (remove later)
-              </p>
-              <p className="mt-2 text-xl font-bold text-[#1a3d2e]">
-                {classification.objectName}
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-[#1a3d2e]/10 px-4 py-4 text-sm text-[#1a3d2e]">
-              <p className="font-semibold">Classification</p>
-              <dl className="mt-3 space-y-2">
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-[#1a3d2e]/70">
-                    Category
-                  </dt>
-                  <dd className="text-base font-medium">{classification.category}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-[#1a3d2e]/70">
-                    Class
-                  </dt>
-                  <dd className="text-base font-medium">{classification.class}</dd>
-                </div>
-              </dl>
-            </div>
+        {status === "success" && classification && source && (
+          <div className="mt-6">
+            <DescriptionClassificationPanel
+              classification={classification}
+              source={source}
+            />
           </div>
         )}
 
