@@ -1,7 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-card";
+import { celebrateDisposal } from "@/lib/celebrate-disposal";
+import {
+  btnOutlineForestClass,
+  btnPrimaryClass,
+} from "@/lib/hophacks-ui";
+import { clearLocationGuidanceSession } from "@/lib/location-guidance-session";
 import { AtHomeDisposalCard } from "@/components/at-home-disposal-card";
 import { GeneralDisposalGuidance } from "@/components/general-disposal-guidance";
 import { BaltimoreGuidanceDisplay } from "@/components/baltimore-guidance-display";
@@ -11,9 +20,23 @@ type LocationGuidanceViewProps = {
   session: LocationGuidanceSession;
 };
 
+const DISPOSED_NAV_DELAY_MS = 1100;
+
 export function LocationGuidanceView({ session }: LocationGuidanceViewProps) {
+  const router = useRouter();
+  const [disposing, setDisposing] = useState(false);
   const { classification, origin, scope, guidance, locationNote } = session;
   const inBaltimore = scope === "baltimore" && guidance;
+
+  function handleDisposed() {
+    if (disposing) return;
+    setDisposing(true);
+    celebrateDisposal();
+    window.setTimeout(() => {
+      clearLocationGuidanceSession();
+      router.push("/disposed");
+    }, DISPOSED_NAV_DELAY_MS);
+  }
 
   return (
     <div className="space-y-6">
@@ -60,19 +83,23 @@ export function LocationGuidanceView({ session }: LocationGuidanceViewProps) {
         </>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <Link
-          href="/result"
-          className="text-sm font-medium text-[var(--litter-forest)] underline decoration-[var(--litter-forest)]/30 underline-offset-4 hover:decoration-[var(--litter-forest)]"
+      <div className="flex flex-col gap-3 pt-1 sm:flex-row-reverse">
+        <Button
+          type="button"
+          disabled={disposing}
+          onClick={handleDisposed}
+          className={`flex-1 ${btnPrimaryClass}`}
         >
-          ← Back to disposal guidance
-        </Link>
-        <Link
-          href={origin}
-          className="text-sm font-medium text-[var(--litter-forest)] underline decoration-[var(--litter-forest)]/30 underline-offset-4 hover:decoration-[var(--litter-forest)]"
+          {disposing ? "Marking disposed…" : "Disposed of this item"}
+        </Button>
+        <Button
+          render={<Link href={origin} />}
+          nativeButton={false}
+          variant="outline"
+          className={`flex-1 ${btnOutlineForestClass}`}
         >
           Identify another item
-        </Link>
+        </Button>
       </div>
     </div>
   );
