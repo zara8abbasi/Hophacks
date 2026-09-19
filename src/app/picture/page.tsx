@@ -6,6 +6,52 @@ import { Button } from "@/components/ui/button";
 
 type CameraState = "idle" | "loading" | "active" | "error" | "captured";
 
+function cameraErrorMessage(err: unknown): string {
+  if (err instanceof DOMException) {
+    switch (err.name) {
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+        return "Camera permission was denied. Allow camera access in your browser settings, then try again—or use Type A Description instead.";
+      case "NotFoundError":
+      case "DevicesNotFoundError":
+        return "No camera was found on this device. Connect a camera or use Type A Description instead.";
+      case "NotReadableError":
+      case "TrackStartError":
+        return "Your camera is in use by another app. Close it and try again.";
+      case "OverconstrainedError":
+        return "This device couldn’t use the requested camera settings. Try again or use Type A Description.";
+      case "SecurityError":
+        return "Camera access isn’t available on this page. Use localhost or HTTPS, or try Type A Description.";
+      default:
+        break;
+    }
+  }
+  if (err instanceof Error && err.message.includes("not supported")) {
+    return err.message;
+  }
+  return "We couldn’t open your camera. Check permissions or use Type A Description instead.";
+}
+
+async function requestCameraStream(): Promise<MediaStream> {
+  const attempts: MediaStreamConstraints[] = [
+    { video: { facingMode: { ideal: "environment" } }, audio: false },
+    { video: { facingMode: "user" }, audio: false },
+    { video: true, audio: false },
+  ];
+  let lastError: unknown;
+  for (const constraints of attempts) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      lastError = err;
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        throw err;
+      }
+    }
+  }
+  throw lastError ?? new Error("Could not open camera.");
+}
+
 export default function PicturePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -21,6 +67,15 @@ export default function PicturePage() {
     }
   }, []);
 
+  const attachStreamToVideo = useCallback(async (video: HTMLVideoElement, stream: MediaStream) => {
+    video.srcObject = stream;
+    try {
+      await video.play();
+    } catch {
+      // Autoplay policies rarely block muted inline video; ignore transient failures.
+    }
+  }, []);
+
   const startCamera = useCallback(async () => {
     setErrorMessage(null);
     setPreviewUrl(null);
@@ -29,17 +84,12 @@ export default function PicturePage() {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error("Camera access is not supported in this browser.");
       }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
+      const stream = await requestCameraStream();
       streamRef.current = stream;
       setCameraState("active");
-    } catch {
+    } catch (err) {
       setCameraState("error");
-      setErrorMessage(
-        "We couldn’t open your camera. Check permissions or use Type A Description instead."
-      );
+      setErrorMessage(cameraErrorMessage(err));
       stopStream();
     }
   }, [stopStream]);
@@ -62,10 +112,9 @@ export default function PicturePage() {
     const video = videoRef.current;
     const stream = streamRef.current;
     if (cameraState === "active" && video && stream) {
-      video.srcObject = stream;
-      void video.play();
+      void attachStreamToVideo(video, stream);
     }
-  }, [cameraState]);
+  }, [cameraState, attachStreamToVideo]);
 
   useEffect(() => {
     return () => stopStream();
@@ -92,9 +141,15 @@ export default function PicturePage() {
             <div className="flex aspect-[4/3] w-full items-center justify-center bg-black/10 text-sm text-black/70">
               Opening camera…
             </div>
+          ) : cameraState === "error" ? (
+            <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 bg-[#1a3d2e]/15 p-6 text-center text-sm text-black/70">
+              <span className="font-medium text-black/80">Camera unavailable</span>
+              <span>Tap Start camera to try again, or go back and use Type A Description.</span>
+            </div>
           ) : cameraState === "active" ? (
             <video
               ref={videoRef}
+              autoPlay
               playsInline
               muted
               className="aspect-[4/3] w-full bg-black/80 object-cover"
