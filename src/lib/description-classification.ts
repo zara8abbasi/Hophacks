@@ -36,6 +36,8 @@ export const CLASSIFICATION_JSON_SCHEMA = {
 
 const XAI_CHAT_URL = "https://api.x.ai/v1/chat/completions";
 const DEFAULT_GROK_MODEL = "grok-3-mini";
+const DEFAULT_GROK_VISION_MODEL = "grok-4.6";
+const MAX_PICTURE_BASE64_CHARS = 7_000_000;
 
 export function getGrokApiKey(): string | undefined {
   const key = process.env.XAI_API_KEY ?? process.env.GROK_API_KEY;
@@ -117,6 +119,31 @@ export function mockClassifyDescription(
   };
 }
 
+function parseClassificationFromGrokContent(
+  content: string
+): DescriptionClassification {
+  let parsed: DescriptionClassification;
+  try {
+    parsed = JSON.parse(content) as DescriptionClassification;
+  } catch {
+    throw new Error("Grok returned classification JSON we could not parse.");
+  }
+
+  if (
+    !parsed.objectName?.trim() ||
+    !parsed.category?.trim() ||
+    !parsed.class?.trim()
+  ) {
+    throw new Error("Grok classification was missing required fields.");
+  }
+
+  return {
+    objectName: parsed.objectName.trim(),
+    category: parsed.category.trim(),
+    class: parsed.class.trim(),
+  };
+}
+
 export async function classifyDescriptionWithGrok(
   description: string
 ): Promise<DescriptionClassification> {
@@ -170,24 +197,102 @@ export async function classifyDescriptionWithGrok(
     throw new Error("Grok returned an empty classification response.");
   }
 
-  let parsed: DescriptionClassification;
-  try {
-    parsed = JSON.parse(content) as DescriptionClassification;
-  } catch {
-    throw new Error("Grok returned classification JSON we could not parse.");
-  }
+  return parseClassificationFromGrokContent(content);
+}
 
-  if (
-    !parsed.objectName?.trim() ||
-    !parsed.category?.trim() ||
-    !parsed.class?.trim()
-  ) {
-    throw new Error("Grok classification was missing required fields.");
+/** Normalize client JPEG payload to a data URL for xAI vision messages. */
+export function normalizePictureDataUrl(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    throw new Error("Image data is required.");
   }
+  if (trimmed.startsWith("data:")) {
+    if (!/^data:image\/(jpeg|jpg|png|webp);base64,/i.test(trimmed)) {
+      throw new Error("Image must be a JPEG, PNG, or WebP data URL.");
+    }
+    return trimmed;
+  }
+  if (trimmed.length > MAX_PICTURE_BASE64_CHARS) {
+    throw new Error("Image is too large. Capture a smaller photo and try again.");
+  }
+  return `data:image/jpeg;base64,${trimmed}`;
+}
 
+export function mockClassifyPicture(): DescriptionClassification {
   return {
-    objectName: parsed.objectName.trim(),
-    category: parsed.category.trim(),
-    class: parsed.class.trim(),
+    objectName: "Item in photo (mock)",
+    category: "General waste / recycling (mock)",
+    class: "Needs live Grok vision for a precise match",
   };
+}
+
+export async function classifyPictureWithGrok(
+  imageInput: string
+): Promise<DescriptionClassification> {
+  const apiKey = getGrokApiKey();
+  if (!apiKey) {
+    return mockClassifyPicture();
+  }
+
+  const dataUrl = normalizePictureDataUrl(imageInput);
+  if (dataUrl.length > MAX_PICTURE_BASE64_CHARS) {
+    throw new Error("Image is too large. Capture a smaller photo and try again.");
+  }
+
+  const model =
+    process.env.GROK_VISION_MODEL?.trim() || DEFAULT_GROK_VISION_MODEL;
+
+  const response = await fetch(XAI_CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.2,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You help Baltimore residents understand what they are trying to dispose of. From the photo, identify the main disposable object in frame and return a structured classification with objectName (short label), category (broad material or waste stream), and class (more specific subtype). Use plain English. If the image is unclear, make your best reasonable guess and reflect uncertainty in the class field.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: { url: dataUrl, detail: "high" },
+            },
+            {
+              type: "text",
+              text: "Identify the primary item in this photo that someone would want to throw away or recycle, then classify it.",
+            },
+          ],
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: CLASSIFICATION_JSON_SCHEMA,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(
+      `Grok API error (${response.status})${detail ? `: ${detail.slice(0, 200)}` : ""}`
+    );
+  }
+
+  const payload = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string | null } }>;
+  };
+
+  const content = payload.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error("Grok returned an empty classification response.");
+  }
+
+  return parseClassificationFromGrokContent(content);
 }

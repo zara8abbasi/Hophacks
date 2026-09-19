@@ -8,7 +8,8 @@ HopHacks is a Baltimore-focused web app that helps residents figure out how to d
 - Placeholder flows for camera capture, typed descriptions, and browser speech recognition
 - Warm beige → forest green gradient UI with grain texture (Next.js, TypeScript, Tailwind, shadcn/ui)
 
-- **Type A Description** (`/type`): sends your text to Grok (xAI) for object identification and classification (category + class). Camera and speech flows are still placeholders.
+- **Type A Description** (`/type`): sends your text to Grok (xAI) for object identification and classification (category + class).
+- **Take A Picture** (`/picture`): captures a photo and sends it to Grok vision for the same classification shape (mock when no API key).
 
 Other API integrations (ElevenLabs, Open Baltimore) are not wired yet.
 
@@ -23,7 +24,7 @@ Open [http://localhost:43123](http://localhost:43123).
 
 ### Grok API key (optional)
 
-Copy `.env.example` to `.env.local` and set `XAI_API_KEY` (or `GROK_API_KEY`) from your [xAI console](https://console.x.ai/). Without a key, `/type` uses a local mock classifier and shows a banner on the results screen.
+Copy `.env.example` to `.env.local` and set `XAI_API_KEY` (or `GROK_API_KEY`) from your [xAI console](https://console.x.ai/). Without a key, `/type` and `/picture` use a local mock classifier and show a banner on the results screen.
 
 ## Scripts
 

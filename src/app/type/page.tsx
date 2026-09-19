@@ -46,9 +46,10 @@ export default function TypePage() {
 
       if (!res.ok) {
         setStatus("api_error");
+        const errPayload = data as { error?: string };
         setApiErrorMessage(
-          typeof data.error === "string" && data.error
-            ? data.error
+          typeof errPayload.error === "string" && errPayload.error
+            ? errPayload.error
             : "We couldn’t classify that description. Check your connection and try again."
         );
         return;
