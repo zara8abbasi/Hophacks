@@ -13,15 +13,22 @@ import {
   isCurbsideDisposalMethod,
   resolveDisposalMethod,
 } from "@/lib/disposal-method";
+import { isInsideBaltimore } from "@/lib/baltimore-geocode";
 
 type BaltimoreDisposalGuidanceProps = {
   classification: DescriptionClassification;
+  /** Fired when a Baltimore City location was used for guidance. */
+  onBaltimoreLocationConfirmed?: () => void;
+  /** Fired when GPS coordinates are outside Baltimore City. */
+  onOutsideBaltimore?: () => void;
 };
 
 type GeoStatus = "idle" | "requesting" | "denied" | "error" | "ready";
 
 export function BaltimoreDisposalGuidance({
   classification,
+  onBaltimoreLocationConfirmed,
+  onOutsideBaltimore,
 }: BaltimoreDisposalGuidanceProps) {
   const disposalPreview = resolveDisposalMethod(classification);
   const showCollectionDays = isCurbsideDisposalMethod(disposalPreview.method);
@@ -56,6 +63,7 @@ export function BaltimoreDisposalGuidance({
       return;
     }
     setGuidance(result.guidance);
+    onBaltimoreLocationConfirmed?.();
   }
 
   function requestGeolocation() {
@@ -70,6 +78,15 @@ export function BaltimoreDisposalGuidance({
       (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
+        if (!isInsideBaltimore(lat, lng)) {
+          setGeoCoords(null);
+          setGeoStatus("error");
+          setGeoMessage(
+            "Your location appears outside Baltimore City. General disposal guidance above applies; enter a Baltimore address here for city drop-off centers."
+          );
+          onOutsideBaltimore?.();
+          return;
+        }
         setGeoCoords({ lat, lng });
         setGeoStatus("ready");
         setGeoMessage("Using your device location for the nearest center.");

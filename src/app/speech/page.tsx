@@ -4,12 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
-import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guidance";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
+import { useDisposalResultNavigation } from "@/hooks/use-disposal-result-navigation";
 import { classifyDescriptionFromText } from "@/lib/classify-description-client";
 import {
   classificationAfterDeclinedClarification,
-  isClassificationReadyForDisposal,
   isDeclinedClarificationAnswer,
   mergeDescriptionWithClarification,
 } from "@/lib/description-classification";
@@ -335,6 +334,14 @@ export default function SpeechPage() {
     phase === "transcribing" ||
     phase === "classifying";
 
+  useDisposalResultNavigation({
+    classification,
+    source: classifySource,
+    origin: "/speech",
+    inputSummary: transcript,
+    enabled: phase === "success",
+  });
+
   return (
     <HopHacksShell showBack>
       <div className="rounded-2xl border border-white/20 bg-white/95 p-6 text-black shadow-lg sm:p-8">
@@ -438,9 +445,6 @@ export default function SpeechPage() {
                 await runClassification(merged, { keepPrevious: true });
               }}
             />
-            {isClassificationReadyForDisposal(classification) ? (
-              <BaltimoreDisposalGuidance classification={classification} />
-            ) : null}
           </div>
         )}
 

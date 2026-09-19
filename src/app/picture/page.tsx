@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
-import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guidance";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
+import { useDisposalResultNavigation } from "@/hooks/use-disposal-result-navigation";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import { classifyPictureFromDataUrl } from "@/lib/classify-picture-client";
 import {
   classificationAfterDeclinedClarification,
-  isClassificationReadyForDisposal,
   isDeclinedClarificationAnswer,
   mergeDescriptionWithClarification,
   type DescriptionClassification,
@@ -234,6 +233,15 @@ export default function PicturePage() {
     classification &&
     source;
 
+  useDisposalResultNavigation({
+    classification,
+    source,
+    origin: "/picture",
+    inputSummary: pictureContext || PICTURE_CONTEXT_SEED,
+    photoPreviewUrl: previewUrl,
+    enabled: classifyStatus === "success",
+  });
+
   return (
     <HopHacksShell showBack>
       <div className="rounded-2xl border border-white/20 bg-white/95 p-6 text-black shadow-lg sm:p-8">
@@ -344,9 +352,6 @@ export default function PicturePage() {
                 });
               }}
             />
-            {isClassificationReadyForDisposal(classification) ? (
-              <BaltimoreDisposalGuidance classification={classification} />
-            ) : null}
           </div>
         )}
 

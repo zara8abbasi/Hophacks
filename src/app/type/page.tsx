@@ -4,13 +4,12 @@ import { useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guidance";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
+import { useDisposalResultNavigation } from "@/hooks/use-disposal-result-navigation";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import { classifyDescriptionFromText } from "@/lib/classify-description-client";
 import {
   classificationAfterDeclinedClarification,
-  isClassificationReadyForDisposal,
   isDeclinedClarificationAnswer,
   mergeDescriptionWithClarification,
 } from "@/lib/description-classification";
@@ -96,6 +95,14 @@ export default function TypePage() {
       classification.status === "unsure" ||
       classification.status === "needs_clarification");
 
+  useDisposalResultNavigation({
+    classification,
+    source,
+    origin: "/type",
+    inputSummary: originalInput || description,
+    enabled: status === "success",
+  });
+
   return (
     <HopHacksShell showBack>
       <form
@@ -162,9 +169,6 @@ export default function TypePage() {
               onTryAgain={handleTryAgain}
               onSubmitClarification={handleClarification}
             />
-            {isClassificationReadyForDisposal(classification) ? (
-              <BaltimoreDisposalGuidance classification={classification} />
-            ) : null}
           </div>
         )}
 
