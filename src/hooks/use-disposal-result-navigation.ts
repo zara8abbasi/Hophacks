@@ -43,8 +43,9 @@ export function useDisposalResultNavigation({
       origin,
       inputSummary: inputSummary?.trim() || undefined,
       photoPreviewUrl: photoPreviewUrl ?? undefined,
+      identificationConfirmed: false,
     });
-    router.push("/result");
+    router.push("/identify");
   }, [
     classification,
     source,

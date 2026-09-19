@@ -3,21 +3,24 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guidance";
+import { BaltimoreGuidanceDisplay } from "@/components/baltimore-guidance-display";
 import { AtHomeDisposalCard } from "@/components/at-home-disposal-card";
 import { GeneralDisposalGuidance } from "@/components/general-disposal-guidance";
-import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import type { DisposalResultSession } from "@/lib/disposal-result-session";
+import type { LocationGuidanceSession } from "@/lib/location-guidance-session";
 
 type DisposalResultViewProps = {
   session: DisposalResultSession;
 };
 
 export function DisposalResultView({ session }: DisposalResultViewProps) {
-  const { classification, source, origin, inputSummary, photoPreviewUrl } =
-    session;
+  const { classification, origin } = session;
 
   const [baltimoreConfirmed, setBaltimoreConfirmed] = useState(false);
   const [outsideBaltimoreGps, setOutsideBaltimoreGps] = useState(false);
+  const [locationGuidance, setLocationGuidance] = useState<
+    Omit<LocationGuidanceSession, "savedAt"> | null
+  >(null);
 
   const originLabel = useMemo(() => {
     switch (origin) {
@@ -33,13 +36,17 @@ export function DisposalResultView({ session }: DisposalResultViewProps) {
   }, [origin]);
 
   const showGeneralPrimary = !baltimoreConfirmed || outsideBaltimoreGps;
+  const inBaltimore =
+    locationGuidance?.scope === "baltimore" && locationGuidance.guidance;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Disposal results</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[#1a3d2e]">
+          Disposal guidance
+        </h1>
         <p className="mt-2 text-sm text-black/70 sm:text-base">
-          Here&apos;s how to handle{" "}
+          How to handle{" "}
           <span className="font-medium text-[#1a3d2e]">
             {classification.objectName}
           </span>{" "}
@@ -47,29 +54,18 @@ export function DisposalResultView({ session }: DisposalResultViewProps) {
         </p>
       </div>
 
-      {photoPreviewUrl ? (
-        <div className="overflow-hidden rounded-xl border border-black/10">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photoPreviewUrl}
-            alt="Item you photographed"
-            className="max-h-48 w-full object-cover"
-          />
-        </div>
-      ) : null}
-
-      {inputSummary ? (
-        <blockquote className="rounded-lg border border-black/10 bg-black/[0.03] px-4 py-3 text-sm text-black/80">
-          <p className="text-xs font-semibold uppercase tracking-wide text-black/50">
-            {origin === "/speech" ? "Transcript" : "Description"}
-          </p>
-          <p className="mt-2 whitespace-pre-wrap">{inputSummary}</p>
-        </blockquote>
-      ) : null}
-
-      <DescriptionClassificationPanel
+      <BaltimoreDisposalGuidance
         classification={classification}
-        source={source}
+        origin={origin}
+        placement="top"
+        onGuidanceResolved={(payload) => {
+          setLocationGuidance(payload);
+        }}
+        onBaltimoreLocationConfirmed={() => {
+          setBaltimoreConfirmed(true);
+          setOutsideBaltimoreGps(false);
+        }}
+        onOutsideBaltimore={() => setOutsideBaltimoreGps(true)}
       />
 
       <AtHomeDisposalCard classification={classification} />
@@ -86,20 +82,37 @@ export function DisposalResultView({ session }: DisposalResultViewProps) {
       {outsideBaltimoreGps && !baltimoreConfirmed ? (
         <p className="text-sm text-amber-950" role="status">
           GPS shows you outside Baltimore City — general disposal is your primary
-          answer. Enter a Baltimore address in the section below only if you
-          need city-specific centers.
+          answer. Enter a Baltimore address above only if you need city-specific
+          centers.
         </p>
       ) : null}
 
-      <BaltimoreDisposalGuidance
-        classification={classification}
-        origin={origin}
-        onBaltimoreLocationConfirmed={() => {
-          setBaltimoreConfirmed(true);
-          setOutsideBaltimoreGps(false);
-        }}
-        onOutsideBaltimore={() => setOutsideBaltimoreGps(true)}
-      />
+      {locationGuidance ? (
+        inBaltimore ? (
+          <div
+            className="space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-white px-4 py-4"
+            aria-live="polite"
+          >
+            <p className="text-sm font-semibold text-[#1a3d2e]">
+              Baltimore disposal details
+            </p>
+            <BaltimoreGuidanceDisplay guidance={locationGuidance.guidance!} />
+          </div>
+        ) : (
+          <div className="space-y-3" aria-live="polite">
+            {locationGuidance.locationNote ? (
+              <p className="text-sm text-amber-950" role="status">
+                {locationGuidance.locationNote}
+              </p>
+            ) : (
+              <p className="text-sm text-amber-950" role="status">
+                Your location is outside Baltimore City. Use general guidance
+                above and check your local municipality for drop-off options.
+              </p>
+            )}
+          </div>
+        )
+      ) : null}
 
       <Link
         href={origin}

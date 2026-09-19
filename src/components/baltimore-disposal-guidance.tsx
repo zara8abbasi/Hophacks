@@ -27,6 +27,10 @@ type BaltimoreDisposalGuidanceProps = {
   onBaltimoreLocationConfirmed?: () => void;
   /** Fired when GPS coordinates are outside Baltimore City. */
   onOutsideBaltimore?: () => void;
+  /** When set, show guidance on the same page instead of navigating to /guidance. */
+  onGuidanceResolved?: (payload: Omit<LocationGuidanceSession, "savedAt">) => void;
+  /** Compact header when location is the first block on the page. */
+  placement?: "default" | "top";
 };
 
 type GeoStatus = "idle" | "requesting" | "denied" | "error" | "ready";
@@ -36,6 +40,8 @@ export function BaltimoreDisposalGuidance({
   origin,
   onBaltimoreLocationConfirmed,
   onOutsideBaltimore,
+  onGuidanceResolved,
+  placement = "default",
 }: BaltimoreDisposalGuidanceProps) {
   const router = useRouter();
   const disposalPreview = resolveDisposalMethod(classification);
@@ -50,10 +56,14 @@ export function BaltimoreDisposalGuidance({
   );
   const [geoMessage, setGeoMessage] = useState<string | null>(null);
 
-  function goToLocationGuidance(
+  function deliverLocationGuidance(
     payload: Omit<LocationGuidanceSession, "savedAt">
   ) {
     saveLocationGuidanceSession(payload);
+    if (onGuidanceResolved) {
+      onGuidanceResolved(payload);
+      return;
+    }
     router.push("/guidance");
   }
 
@@ -72,7 +82,7 @@ export function BaltimoreDisposalGuidance({
     if (!result.ok) {
       if (result.reason === "outside_baltimore") {
         onOutsideBaltimore?.();
-        goToLocationGuidance({
+        deliverLocationGuidance({
           classification,
           origin,
           scope: "outside_baltimore",
@@ -85,7 +95,7 @@ export function BaltimoreDisposalGuidance({
       return;
     }
     onBaltimoreLocationConfirmed?.();
-    goToLocationGuidance({
+    deliverLocationGuidance({
       classification,
       origin,
       scope: "baltimore",
@@ -112,7 +122,7 @@ export function BaltimoreDisposalGuidance({
             "Your location appears outside Baltimore City. General disposal guidance applies.";
           setGeoMessage(note);
           onOutsideBaltimore?.();
-          goToLocationGuidance({
+          deliverLocationGuidance({
             classification,
             origin,
             scope: "outside_baltimore",
@@ -148,20 +158,26 @@ export function BaltimoreDisposalGuidance({
 
   return (
     <div
-      className="mt-6 space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-white px-4 py-4"
+      className={
+        placement === "top"
+          ? "space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-[#e8dcc8]/40 px-4 py-4"
+          : "mt-6 space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-white px-4 py-4"
+      }
       aria-live="polite"
     >
       <div>
         <p className="text-sm font-semibold text-[#1a3d2e]">
-          Baltimore disposal next steps
+          {placement === "top" ? "Your location" : "Baltimore disposal next steps"}
         </p>
         <p className="mt-1 text-sm text-black/70">
-          Based on your item classification — use your location or add your
-          address for the nearest drop-off center
+          Use your location or enter a Baltimore address for the nearest drop-off
+          center
           {showCollectionDays
             ? " and your curbside collection days"
             : ", hours, and drop-off alerts"}
-          . You&apos;ll see full location guidance on the next screen.
+          {placement === "top"
+            ? ". Local details appear below once we resolve your location."
+            : ". You'll see full location guidance on the next screen."}
         </p>
       </div>
 

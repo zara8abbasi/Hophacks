@@ -231,7 +231,9 @@ export default function PicturePage() {
   const showOutcomePanel =
     (classifyStatus === "success" || classifyStatus === "loading") &&
     classification &&
-    source;
+    source &&
+    (classification.status === "unsure" ||
+      classification.status === "needs_clarification");
 
   useDisposalResultNavigation({
     classification,

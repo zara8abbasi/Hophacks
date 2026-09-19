@@ -69,7 +69,7 @@ export function LocationGuidanceView({ session }: LocationGuidanceViewProps) {
           href="/result"
           className="text-sm font-medium text-[#1a3d2e] underline underline-offset-2"
         >
-          ← Change location on results
+          ← Back to disposal guidance
         </Link>
         <Link
           href={origin}

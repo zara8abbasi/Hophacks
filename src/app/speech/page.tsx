@@ -383,9 +383,12 @@ export default function SpeechPage() {
           {phase === "transcribing" && (
             <p className="text-sm text-black/65">Transcribing your recording…</p>
           )}
-          {phase === "classifying" && (
+          {(phase === "classifying" ||
+            (phase === "success" && classification?.status === "identified")) && (
             <p className="text-sm text-black/65">
-              Identifying your item with Grok…
+              {phase === "classifying"
+                ? "Identifying your item with Grok…"
+                : "Opening confirmation…"}
             </p>
           )}
           {phase === "unsupported" && (
@@ -418,7 +421,9 @@ export default function SpeechPage() {
 
         {(phase === "success" || phase === "classifying") &&
           classification &&
-          classifySource && (
+          classifySource &&
+          (classification.status === "unsure" ||
+            classification.status === "needs_clarification") && (
           <div className="mt-6">
             <DescriptionClassificationPanel
               classification={classification}

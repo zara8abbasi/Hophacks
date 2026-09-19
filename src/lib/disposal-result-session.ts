@@ -11,6 +11,8 @@ export type DisposalResultSession = {
   origin: DisposalResultOrigin;
   inputSummary?: string;
   photoPreviewUrl?: string;
+  /** User confirmed Grok identification on /identify */
+  identificationConfirmed?: boolean;
   savedAt: number;
 };
 
@@ -58,4 +60,17 @@ export function loadDisposalResultSession(): DisposalResultSession | null {
 export function clearDisposalResultSession(): void {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(STORAGE_KEY);
+}
+
+export function markDisposalIdentificationConfirmed(): void {
+  const session = loadDisposalResultSession();
+  if (!session) return;
+  saveDisposalResultSession({
+    classification: session.classification,
+    source: session.source,
+    origin: session.origin,
+    inputSummary: session.inputSummary,
+    photoPreviewUrl: session.photoPreviewUrl,
+    identificationConfirmed: true,
+  });
 }

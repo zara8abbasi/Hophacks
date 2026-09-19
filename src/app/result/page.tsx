@@ -20,6 +20,10 @@ export default function ResultPage() {
     setChecked(true);
     if (!loaded) {
       router.replace("/");
+      return;
+    }
+    if (!loaded.identificationConfirmed) {
+      router.replace("/identify");
     }
   }, [router]);
 

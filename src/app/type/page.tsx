@@ -91,8 +91,7 @@ export default function TypePage() {
     (status === "success" || status === "loading") &&
     classification &&
     source &&
-    (classification.status === "identified" ||
-      classification.status === "unsure" ||
+    (classification.status === "unsure" ||
       classification.status === "needs_clarification");
 
   useDisposalResultNavigation({
@@ -144,9 +143,12 @@ export default function TypePage() {
           </p>
         )}
 
-        {status === "loading" && (
+        {(status === "loading" ||
+          (status === "success" && classification?.status === "identified")) && (
           <p className="mt-4 text-sm text-black/60" aria-live="polite">
-            Identifying your item with Grok…
+            {status === "loading"
+              ? "Identifying your item with Grok…"
+              : "Opening confirmation…"}
           </p>
         )}
 
