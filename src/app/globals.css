@@ -128,3 +128,10 @@
     @apply font-sans;
   }
 }
+
+/* Home (/): Litter LookUp panel — frame colors match product mock */
+:root {
+  --litter-forest: #1a3d2e;
+  --litter-mint: #c8e4c4;
+  --litter-title-pill: #9fcf9a;
+}
