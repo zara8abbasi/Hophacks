@@ -1,0 +1,335 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { HopHacksShell } from "@/components/hophacks-shell";
+import { Button } from "@/components/ui/button";
+import type { ClassifyPictureResponse } from "@/app/api/classify-picture/route";
+import type { DescriptionClassification } from "@/lib/description-classification";
+
+type CameraState = "idle" | "loading" | "active" | "error" | "captured";
+type ClassifyStatus = "idle" | "loading" | "success" | "api_error";
+
+function cameraErrorMessage(err: unknown): string {
+  if (err instanceof DOMException) {
+    switch (err.name) {
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+        return "Camera permission was denied. Allow camera access in your browser settings, then try again—or use Type A Description instead.";
+      case "NotFoundError":
+      case "DevicesNotFoundError":
+        return "No camera was found on this device. Connect a camera or use Type A Description instead.";
+      case "NotReadableError":
+      case "TrackStartError":
+        return "Your camera is in use by another app. Close it and try again.";
+      case "OverconstrainedError":
+        return "This device couldn’t use the requested camera settings. Try again or use Type A Description.";
+      case "SecurityError":
+        return "Camera access isn’t available on this page. Use localhost or HTTPS, or try Type A Description.";
+      default:
+        break;
+    }
+  }
+  if (err instanceof Error && err.message.includes("not supported")) {
+    return err.message;
+  }
+  return "We couldn’t open your camera. Check permissions or use Type A Description instead.";
+}
+
+async function requestCameraStream(): Promise<MediaStream> {
+  const attempts: MediaStreamConstraints[] = [
+    { video: { facingMode: { ideal: "environment" } }, audio: false },
+    { video: { facingMode: "user" }, audio: false },
+    { video: true, audio: false },
+  ];
+  let lastError: unknown;
+  for (const constraints of attempts) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      lastError = err;
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        throw err;
+      }
+    }
+  }
+  throw lastError ?? new Error("Could not open camera.");
+}
+
+export default function PicturePage() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraState, setCameraState] = useState<CameraState>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [classifyStatus, setClassifyStatus] = useState<ClassifyStatus>("idle");
+  const [classification, setClassification] =
+    useState<DescriptionClassification | null>(null);
+  const [source, setSource] = useState<"live" | "mock" | null>(null);
+  const [classifyErrorMessage, setClassifyErrorMessage] = useState<
+    string | null
+  >(null);
+
+  const resetClassification = useCallback(() => {
+    setClassifyStatus("idle");
+    setClassification(null);
+    setSource(null);
+    setClassifyErrorMessage(null);
+  }, []);
+
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  const attachStreamToVideo = useCallback(async (video: HTMLVideoElement, stream: MediaStream) => {
+    video.srcObject = stream;
+    try {
+      await video.play();
+    } catch {
+      // Autoplay policies rarely block muted inline video; ignore transient failures.
+    }
+  }, []);
+
+  const classifyCapturedImage = useCallback(async (dataUrl: string) => {
+    setClassifyStatus("loading");
+    setClassification(null);
+    setSource(null);
+    setClassifyErrorMessage(null);
+
+    try {
+      const res = await fetch("/api/classify-picture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+
+      const data = (await res.json()) as ClassifyPictureResponse | { error?: string };
+
+      if (!res.ok) {
+        setClassifyStatus("api_error");
+        const errPayload = data as { error?: string };
+        setClassifyErrorMessage(
+          typeof errPayload.error === "string" && errPayload.error
+            ? errPayload.error
+            : "We couldn’t classify that photo. Check your connection and try again."
+        );
+        return;
+      }
+
+      const success = data as ClassifyPictureResponse;
+      setClassification(success.classification);
+      setSource(success.source);
+      setClassifyStatus("success");
+    } catch {
+      setClassifyStatus("api_error");
+      setClassifyErrorMessage(
+        "Something went wrong while contacting the server. Try again in a moment."
+      );
+    }
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    setErrorMessage(null);
+    setPreviewUrl(null);
+    resetClassification();
+    setCameraState("loading");
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Camera access is not supported in this browser.");
+      }
+      const stream = await requestCameraStream();
+      streamRef.current = stream;
+      setCameraState("active");
+    } catch (err) {
+      setCameraState("error");
+      setErrorMessage(cameraErrorMessage(err));
+      stopStream();
+    }
+  }, [resetClassification, stopStream]);
+
+  const capturePhoto = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || cameraState !== "active") return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    setPreviewUrl(dataUrl);
+    setCameraState("captured");
+    stopStream();
+    void classifyCapturedImage(dataUrl);
+  }, [cameraState, stopStream, classifyCapturedImage]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (cameraState === "active" && video && stream) {
+      void attachStreamToVideo(video, stream);
+    }
+  }, [cameraState, attachStreamToVideo]);
+
+  useEffect(() => {
+    return () => stopStream();
+  }, [stopStream]);
+
+  return (
+    <HopHacksShell showBack>
+      <div className="rounded-2xl border border-white/20 bg-white/95 p-6 text-black shadow-lg sm:p-8">
+        <h1 className="text-2xl font-bold tracking-tight">Take A Picture</h1>
+        <p className="mt-2 text-sm text-black/70 sm:text-base">
+          Position the item in frame and capture a photo. We&apos;ll identify
+          the object with Grok and classify it for Baltimore disposal rules next.
+        </p>
+
+        <div className="mt-6 overflow-hidden rounded-xl border border-black/10 bg-black/5">
+          {previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt="Captured preview of your item"
+              className="aspect-[4/3] w-full object-cover"
+            />
+          ) : cameraState === "loading" ? (
+            <div className="flex aspect-[4/3] w-full items-center justify-center bg-black/10 text-sm text-black/70">
+              Opening camera…
+            </div>
+          ) : cameraState === "error" ? (
+            <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 bg-[#1a3d2e]/15 p-6 text-center text-sm text-black/70">
+              <span className="font-medium text-black/80">Camera unavailable</span>
+              <span>Tap Start camera to try again, or go back and use Type A Description.</span>
+            </div>
+          ) : cameraState === "active" ? (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="aspect-[4/3] w-full bg-black/80 object-cover"
+            />
+          ) : (
+            <div className="flex aspect-[4/3] w-full items-center justify-center bg-[#1a3d2e]/20 p-6 text-center text-sm text-black/60">
+              Camera preview will appear here after you start.
+            </div>
+          )}
+        </div>
+
+        {errorMessage && (
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-900" role="alert">
+            {errorMessage}
+          </p>
+        )}
+
+        {classifyStatus === "loading" && (
+          <p className="mt-4 text-sm text-black/60" aria-live="polite">
+            Identifying your item with Grok…
+          </p>
+        )}
+
+        {classifyStatus === "api_error" && classifyErrorMessage && (
+          <p className="mt-4 text-sm text-red-700" role="alert">
+            {classifyErrorMessage}
+          </p>
+        )}
+
+        {classifyStatus === "success" && classification && (
+          <div className="mt-6 space-y-4" aria-live="polite">
+            {source === "mock" && (
+              <p
+                className="rounded-lg border border-amber-600/30 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+                role="status"
+              >
+                Using mock classification — add{" "}
+                <code className="text-xs">XAI_API_KEY</code> or{" "}
+                <code className="text-xs">GROK_API_KEY</code> to{" "}
+                <code className="text-xs">.env.local</code> for live Grok results.
+              </p>
+            )}
+
+            {/* TEMP(slice): remove when product no longer needs on-screen object debug print */}
+            <div
+              className="rounded-xl border-2 border-dashed border-[#1a3d2e]/40 bg-[#1a3d2e]/5 px-4 py-4"
+              data-temporary-slice="grok-object-print"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#1a3d2e]/70">
+                Temporary — identified object (remove later)
+              </p>
+              <p className="mt-2 text-xl font-bold text-[#1a3d2e]">
+                {classification.objectName}
+              </p>
+            </div>
+
+            <div className="rounded-lg bg-[#1a3d2e]/10 px-4 py-4 text-sm text-[#1a3d2e]">
+              <p className="font-semibold">Classification</p>
+              <dl className="mt-3 space-y-2">
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-[#1a3d2e]/70">
+                    Category
+                  </dt>
+                  <dd className="text-base font-medium">{classification.category}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-[#1a3d2e]/70">
+                    Class
+                  </dt>
+                  <dd className="text-base font-medium">{classification.class}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          {cameraState === "idle" || cameraState === "error" ? (
+            <Button
+              type="button"
+              onClick={startCamera}
+              className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+            >
+              Start camera
+            </Button>
+          ) : null}
+          {cameraState === "active" ? (
+            <Button
+              type="button"
+              onClick={capturePhoto}
+              className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+            >
+              Capture photo
+            </Button>
+          ) : null}
+          {cameraState === "captured" ? (
+            <>
+              <Button
+                type="button"
+                onClick={() => {
+                  setPreviewUrl(null);
+                  startCamera();
+                }}
+                variant="outline"
+                className="h-11 flex-1 border-black/20 bg-white text-black hover:bg-black/5"
+                disabled={classifyStatus === "loading"}
+              >
+                Retake
+              </Button>
+              {classifyStatus === "api_error" && previewUrl ? (
+                <Button
+                  type="button"
+                  onClick={() => void classifyCapturedImage(previewUrl)}
+                  className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+                >
+                  Try classify again
+                </Button>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      </div>
+    </HopHacksShell>
+  );
+}
