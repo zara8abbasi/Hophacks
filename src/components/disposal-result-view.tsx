@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { PageHeader } from "@/components/page-card";
 import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guidance";
 import { BaltimoreGuidanceDisplay } from "@/components/baltimore-guidance-display";
 import { AtHomeDisposalCard } from "@/components/at-home-disposal-card";
@@ -41,18 +42,18 @@ export function DisposalResultView({ session }: DisposalResultViewProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#1a3d2e]">
-          Disposal guidance
-        </h1>
-        <p className="mt-2 text-sm text-black/70 sm:text-base">
-          How to handle{" "}
-          <span className="font-medium text-[#1a3d2e]">
-            {classification.objectName}
-          </span>{" "}
-          based on {originLabel}.
-        </p>
-      </div>
+      <PageHeader
+        title="Disposal guidance"
+        description={
+          <>
+            How to handle{" "}
+            <span className="font-semibold text-[var(--litter-forest)]">
+              {classification.objectName}
+            </span>{" "}
+            based on your {originLabel}.
+          </>
+        }
+      />
 
       <BaltimoreDisposalGuidance
         classification={classification}
@@ -90,10 +91,10 @@ export function DisposalResultView({ session }: DisposalResultViewProps) {
       {locationGuidance ? (
         inBaltimore ? (
           <div
-            className="space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-white px-4 py-4"
+            className="space-y-4 rounded-xl border border-[var(--litter-forest)]/15 bg-white px-4 py-4 shadow-sm"
             aria-live="polite"
           >
-            <p className="text-sm font-semibold text-[#1a3d2e]">
+            <p className="text-sm font-semibold text-[var(--litter-forest)]">
               Baltimore disposal details
             </p>
             <BaltimoreGuidanceDisplay guidance={locationGuidance.guidance!} />
@@ -116,7 +117,7 @@ export function DisposalResultView({ session }: DisposalResultViewProps) {
 
       <Link
         href={origin}
-        className="inline-block text-sm font-medium text-[#1a3d2e] underline underline-offset-2"
+        className="inline-flex text-sm font-medium text-[var(--litter-forest)] underline decoration-[var(--litter-forest)]/30 underline-offset-4 hover:decoration-[var(--litter-forest)]"
       >
         ← Identify another item
       </Link>

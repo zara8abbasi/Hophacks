@@ -10,8 +10,8 @@ export function BaltimoreGuidanceDisplay({
 }: BaltimoreGuidanceDisplayProps) {
   return (
     <div className="space-y-4 text-sm">
-      <section className="rounded-lg bg-[#1a3d2e]/10 px-4 py-3">
-        <p className="font-semibold text-[#1a3d2e]">
+      <section className="rounded-xl border border-[var(--litter-forest)]/10 bg-[var(--litter-forest)]/[0.06] px-4 py-3">
+        <p className="font-semibold text-[var(--litter-forest)]">
           {guidance.disposal.headline}
         </p>
         <p className="mt-2 text-black/80">{guidance.disposal.detail}</p>
@@ -25,7 +25,7 @@ export function BaltimoreGuidanceDisplay({
 
       {guidance.dropOffWarnings.length > 0 && (
         <section className="space-y-2" role="status">
-          <p className="font-semibold text-[#1a3d2e]">Drop-off alerts</p>
+          <p className="font-semibold text-[var(--litter-forest)]">Drop-off alerts</p>
           {guidance.dropOffWarnings.map((w, i) => (
             <div
               key={`${w.title}-${i}`}
@@ -59,7 +59,7 @@ export function BaltimoreGuidanceDisplay({
 
       {isCurbsideDisposalMethod(guidance.disposal.method) ? (
         <section>
-          <p className="font-semibold text-[#1a3d2e]">Collection days</p>
+          <p className="font-semibold text-[var(--litter-forest)]">Collection days</p>
           {guidance.schedule.ok ? (
             <ul className="mt-2 list-inside list-disc space-y-1 text-black/80">
               <li>
@@ -83,7 +83,7 @@ export function BaltimoreGuidanceDisplay({
       ) : null}
 
       <section>
-        <p className="font-semibold text-[#1a3d2e]">Nearest drop-off center</p>
+        <p className="font-semibold text-[var(--litter-forest)]">Nearest drop-off center</p>
         {guidance.nearestCenter.ok ? (
           <div className="mt-2 space-y-2 text-black/80">
             <p className="font-medium">{guidance.nearestCenter.name}</p>
@@ -106,7 +106,7 @@ export function BaltimoreGuidanceDisplay({
               href={guidance.nearestCenter.directionsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block text-sm font-medium text-[#1a3d2e] underline underline-offset-2"
+              className="inline-flex text-sm font-medium text-[var(--litter-forest)] underline decoration-[var(--litter-forest)]/30 underline-offset-4 hover:decoration-[var(--litter-forest)]"
             >
               Open directions in Google Maps
             </a>

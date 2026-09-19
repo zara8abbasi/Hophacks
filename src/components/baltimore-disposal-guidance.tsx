@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  btnOutlineForestClass,
+  btnPrimaryClass,
+  insetPanelClass,
+} from "@/lib/hophacks-ui";
 import type { DescriptionClassification } from "@/lib/description-classification";
 import {
   fetchDisposalGuidance,
@@ -160,13 +165,13 @@ export function BaltimoreDisposalGuidance({
     <div
       className={
         placement === "top"
-          ? "space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-[#e8dcc8]/40 px-4 py-4"
-          : "mt-6 space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-white px-4 py-4"
+          ? `space-y-4 ${insetPanelClass} px-4 py-4`
+          : "mt-6 space-y-4 rounded-xl border border-[var(--litter-forest)]/15 bg-white px-4 py-4 shadow-sm"
       }
       aria-live="polite"
     >
       <div>
-        <p className="text-sm font-semibold text-[#1a3d2e]">
+        <p className="text-sm font-semibold text-[var(--litter-forest)]">
           {placement === "top" ? "Your location" : "Baltimore disposal next steps"}
         </p>
         <p className="mt-1 text-sm text-black/70">
@@ -187,7 +192,7 @@ export function BaltimoreDisposalGuidance({
           variant="outline"
           disabled={loading || geoStatus === "requesting"}
           onClick={() => requestGeolocation()}
-          className="h-11 border-[#1a3d2e]/30 bg-white text-[#1a3d2e] hover:bg-[#1a3d2e]/5"
+          className={btnOutlineForestClass}
         >
           {geoStatus === "requesting"
             ? "Getting location…"
@@ -222,7 +227,7 @@ export function BaltimoreDisposalGuidance({
         onClick={() =>
           void loadGuidance({ mode: "address", address: address.trim() })
         }
-        className="h-11 w-full bg-black text-white hover:bg-black/90 sm:w-auto sm:min-w-[12rem]"
+        className={`w-full sm:w-auto sm:min-w-[12rem] ${btnPrimaryClass}`}
       >
         {loading
           ? "Looking up…"

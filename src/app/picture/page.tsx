@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
+import { PageCard, PageHeader } from "@/components/page-card";
 import { Button } from "@/components/ui/button";
+import {
+  btnOutlineNeutralClass,
+  btnPrimaryClass,
+} from "@/lib/hophacks-ui";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { useDisposalResultNavigation } from "@/hooks/use-disposal-result-navigation";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
@@ -246,16 +251,20 @@ export default function PicturePage() {
 
   return (
     <HopHacksShell showBack>
-      <div className="rounded-2xl border border-white/20 bg-white/95 p-6 text-black shadow-lg sm:p-8">
-        <h1 className="text-2xl font-bold tracking-tight">Take A Picture</h1>
-        <p className="mt-2 text-sm text-black/70 sm:text-base">
-          Position the item in frame and tap <strong>Capture photo</strong>.
-          The live preview stays on your device; only the captured JPEG is sent
-          to Grok vision on our server to identify the object and classify it for
-          Baltimore disposal rules.
-        </p>
+      <PageCard>
+        <PageHeader
+          title="Take a photo"
+          description={
+            <>
+              Center the item in frame, then tap <strong>Capture photo</strong>.
+              The live preview stays on your device; only the captured image is
+              sent to Grok on our server for identification and Baltimore
+              disposal classification.
+            </>
+          }
+        />
 
-        <div className="mt-6 overflow-hidden rounded-xl border border-black/10 bg-black/5">
+        <div className="mt-6 overflow-hidden rounded-xl border border-black/10 bg-[var(--litter-forest)]/[0.04] shadow-inner">
           {previewUrl ? (
             <div className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -280,7 +289,7 @@ export default function PicturePage() {
           ) : cameraState === "error" ? (
             <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 bg-[#1a3d2e]/15 p-6 text-center text-sm text-black/70">
               <span className="font-medium text-black/80">Camera unavailable</span>
-              <span>Tap Start camera to try again, or go back and use Type A Description.</span>
+              <span>Tap Start camera to try again, or go back and type a description instead.</span>
             </div>
           ) : cameraState === "active" ? (
             <video
@@ -362,7 +371,7 @@ export default function PicturePage() {
             <Button
               type="button"
               onClick={startCamera}
-              className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+              className={`flex-1 ${btnPrimaryClass}`}
             >
               Start camera
             </Button>
@@ -372,7 +381,7 @@ export default function PicturePage() {
               type="button"
               onClick={capturePhoto}
               disabled={!videoReady}
-              className="h-11 flex-1 bg-black text-white hover:bg-black/90 disabled:opacity-50"
+              className={`flex-1 ${btnPrimaryClass} disabled:opacity-50`}
             >
               {videoReady ? "Capture photo" : "Preparing camera…"}
             </Button>
@@ -383,7 +392,7 @@ export default function PicturePage() {
                 type="button"
                 onClick={handleRetake}
                 variant="outline"
-                className="h-11 flex-1 border-black/20 bg-white text-black hover:bg-black/5"
+                className={`flex-1 ${btnOutlineNeutralClass}`}
                 disabled={classifyStatus === "loading"}
               >
                 Retake
@@ -392,7 +401,7 @@ export default function PicturePage() {
                 <Button
                   type="button"
                   onClick={() => void classifyCapturedImage(previewUrl)}
-                  className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+                  className={`flex-1 ${btnPrimaryClass}`}
                 >
                   Try classify again
                 </Button>
@@ -400,7 +409,7 @@ export default function PicturePage() {
             </>
           ) : null}
         </div>
-      </div>
+      </PageCard>
     </HopHacksShell>
   );
 }

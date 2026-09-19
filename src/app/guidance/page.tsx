@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HopHacksShell } from "@/components/hophacks-shell";
+import { LoadingCard, PageCard } from "@/components/page-card";
 import { LocationGuidanceView } from "@/components/location-guidance-view";
 import {
   loadLocationGuidanceSession,
@@ -26,18 +27,16 @@ export default function GuidancePage() {
   if (!checked || !session) {
     return (
       <HopHacksShell showBack>
-        <p className="rounded-2xl border border-white/20 bg-white/95 p-6 text-sm text-black/70 shadow-lg">
-          Loading disposal guidance…
-        </p>
+        <LoadingCard message="Loading location guidance…" />
       </HopHacksShell>
     );
   }
 
   return (
     <HopHacksShell showBack>
-      <div className="rounded-2xl border border-white/20 bg-white/95 p-6 text-black shadow-lg sm:p-8">
+      <PageCard>
         <LocationGuidanceView session={session} />
-      </div>
+      </PageCard>
     </HopHacksShell>
   );
 }

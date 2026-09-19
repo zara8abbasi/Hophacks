@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PageHeader } from "@/components/page-card";
 import { AtHomeDisposalCard } from "@/components/at-home-disposal-card";
 import { GeneralDisposalGuidance } from "@/components/general-disposal-guidance";
 import { BaltimoreGuidanceDisplay } from "@/components/baltimore-guidance-display";
@@ -16,15 +17,10 @@ export function LocationGuidanceView({ session }: LocationGuidanceViewProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Location-based disposal
-        </h1>
-        <p className="mt-2 text-sm text-black/70 sm:text-base">
-          How to dispose of your item based on where you are — no need to
-          re-identify it here.
-        </p>
-      </div>
+      <PageHeader
+        title="Location-based disposal"
+        description="Drop-off centers and collection details for your item based on where you are—no need to identify it again."
+      />
 
       <AtHomeDisposalCard classification={classification} />
 
@@ -36,10 +32,10 @@ export function LocationGuidanceView({ session }: LocationGuidanceViewProps) {
             curbside pickup applies.
           </p>
           <div
-            className="space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-white px-4 py-4"
+            className="space-y-4 rounded-xl border border-[var(--litter-forest)]/15 bg-white px-4 py-4 shadow-sm"
             aria-live="polite"
           >
-            <p className="text-sm font-semibold text-[#1a3d2e]">
+            <p className="text-sm font-semibold text-[var(--litter-forest)]">
               Baltimore disposal details
             </p>
             <BaltimoreGuidanceDisplay guidance={guidance} />
@@ -67,13 +63,13 @@ export function LocationGuidanceView({ session }: LocationGuidanceViewProps) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <Link
           href="/result"
-          className="text-sm font-medium text-[#1a3d2e] underline underline-offset-2"
+          className="text-sm font-medium text-[var(--litter-forest)] underline decoration-[var(--litter-forest)]/30 underline-offset-4 hover:decoration-[var(--litter-forest)]"
         >
           ← Back to disposal guidance
         </Link>
         <Link
           href={origin}
-          className="text-sm font-medium text-[#1a3d2e] underline underline-offset-2"
+          className="text-sm font-medium text-[var(--litter-forest)] underline decoration-[var(--litter-forest)]/30 underline-offset-4 hover:decoration-[var(--litter-forest)]"
         >
           Identify another item
         </Link>

@@ -26,13 +26,18 @@ export function HopHacksShell({
         }}
         aria-hidden
       />
-      <div className={cn("relative mx-auto flex w-full max-w-lg flex-1 flex-col px-5 py-10 sm:px-8 sm:py-14", className)}>
+      <div
+        className={cn(
+          "relative mx-auto flex w-full max-w-xl flex-1 flex-col px-5 py-8 sm:px-8 sm:py-12",
+          className
+        )}
+      >
         {showBack && (
           <Link
             href="/"
-            className="mb-8 text-sm font-medium text-white/90 underline-offset-4 hover:text-white hover:underline"
+            className="mb-6 inline-flex w-fit items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white/95 backdrop-blur-sm transition hover:border-white/35 hover:bg-white/15"
           >
-            ← Back to home
+            ← Home
           </Link>
         )}
         {children}

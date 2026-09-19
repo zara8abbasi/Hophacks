@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
+import { PageCard, PageHeader } from "@/components/page-card";
 import { Button } from "@/components/ui/button";
+import { btnPrimaryClass } from "@/lib/hophacks-ui";
 import { Textarea } from "@/components/ui/textarea";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { useDisposalResultNavigation } from "@/hooks/use-disposal-result-navigation";
@@ -104,16 +106,12 @@ export default function TypePage() {
 
   return (
     <HopHacksShell showBack>
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-2xl border border-white/20 bg-white/95 p-6 text-black shadow-lg sm:p-8"
-      >
-        <h1 className="text-2xl font-bold tracking-tight">Type A Description</h1>
-        <p className="mt-2 text-sm text-black/70 sm:text-base">
-          Describe what you want to throw away—material, condition, and anything
-          on the label. We&apos;ll identify the item and classify it for Baltimore
-          disposal rules next.
-        </p>
+      <PageCard>
+      <form onSubmit={handleSubmit}>
+        <PageHeader
+          title="Type a description"
+          description="Describe what you want to throw away—material, condition, and anything on the label. We'll identify the item and classify it for Baltimore disposal rules."
+        />
 
         <label className="mt-6 block text-sm font-medium" htmlFor="item-description">
           What are you trying to dispose of?
@@ -178,12 +176,13 @@ export default function TypePage() {
           <Button
             type="submit"
             disabled={status === "loading"}
-            className="mt-6 h-11 w-full bg-black text-white hover:bg-black/90 sm:w-auto sm:min-w-[12rem]"
+            className={`mt-6 w-full sm:w-auto sm:min-w-[12rem] ${btnPrimaryClass}`}
           >
             {status === "loading" ? "Classifying…" : "Classify item"}
           </Button>
         ) : null}
       </form>
+      </PageCard>
     </HopHacksShell>
   );
 }

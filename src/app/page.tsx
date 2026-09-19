@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { HopHacksShell } from "@/components/hophacks-shell";
 
-const FOREST = "#1a3d2e";
-const MINT = "#c8e4c4";
-const TITLE_PILL = "#9fcf9a";
+const FOREST = "var(--litter-forest)";
+const MINT = "var(--litter-mint)";
+const TITLE_PILL = "var(--litter-title-pill)";
 
 function RecycleEarthIcon({ className }: { className?: string }) {
   return (
@@ -16,7 +16,7 @@ function RecycleEarthIcon({ className }: { className?: string }) {
     >
       <path
         d="M60 8 L108 68 L84 108 L36 108 L12 68 Z"
-        stroke={FOREST}
+        stroke="#1a3d2e"
         strokeWidth="6"
         strokeLinejoin="round"
         fill="none"
@@ -36,17 +36,17 @@ function RecycleEarthIcon({ className }: { className?: string }) {
       />
       <path
         d="M28 72 L44 44 L52 52 L40 76 Z"
-        fill={FOREST}
+        fill="#1a3d2e"
         opacity="0.9"
       />
       <path
         d="M92 72 L76 44 L68 52 L80 76 Z"
-        fill={FOREST}
+        fill="#1a3d2e"
         opacity="0.9"
       />
       <path
         d="M60 100 L48 80 L72 80 Z"
-        fill={FOREST}
+        fill="#1a3d2e"
         opacity="0.9"
       />
     </svg>
@@ -54,58 +54,59 @@ function RecycleEarthIcon({ className }: { className?: string }) {
 }
 
 const homeActions = [
-  { href: "/picture", label: "Upload Picture" },
+  { href: "/picture", label: "Upload a photo" },
   { href: "/type", label: "Type a description" },
-  { href: "/speech", label: "Verbal input" },
+  { href: "/speech", label: "Use voice input" },
 ] as const;
 
 export default function Home() {
   return (
-    <HopHacksShell className="max-w-5xl justify-center py-6 sm:py-8">
+    <HopHacksShell className="max-w-2xl justify-center py-6 sm:max-w-3xl sm:py-10">
       <div
-        className="w-full rounded-[1.25rem] p-3 sm:rounded-[1.5rem] sm:p-4"
+        className="w-full rounded-[1.35rem] p-3 shadow-[0_20px_50px_rgba(10,24,18,0.35)] sm:rounded-[1.5rem] sm:p-3.5"
         style={{ backgroundColor: FOREST }}
       >
         <div
-          className="font-home-display flex min-h-[min(26rem,58dvh)] flex-col rounded-2xl px-5 py-7 sm:min-h-[min(28rem,62dvh)] sm:rounded-[1.25rem] sm:px-10 sm:py-9"
+          className="font-home-display flex min-h-[min(26rem,58dvh)] flex-col rounded-[1.15rem] px-6 py-8 sm:min-h-[min(28rem,62dvh)] sm:rounded-[1.25rem] sm:px-10 sm:py-10"
           style={{ backgroundColor: MINT }}
         >
-          <header className="flex shrink-0 items-start justify-between gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
+          <header className="flex shrink-0 items-start justify-between gap-4 sm:gap-6">
+            <div className="min-w-0 flex-1 pt-0.5">
               <div
-                className="inline-block rounded-full px-5 py-2.5 sm:px-7 sm:py-3"
+                className="inline-block rounded-full px-5 py-2 sm:px-7 sm:py-2.5"
                 style={{ backgroundColor: TITLE_PILL }}
               >
                 <h1
-                  className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl"
+                  className="text-[1.65rem] font-bold tracking-tight sm:text-3xl md:text-[2rem]"
                   style={{ color: FOREST }}
                 >
                   Litter LookUp
                 </h1>
               </div>
               <p
-                className="mt-4 max-w-md text-sm leading-snug sm:text-base sm:leading-relaxed"
+                className="mt-4 max-w-md text-[0.9375rem] leading-relaxed sm:text-base"
                 style={{ color: FOREST }}
               >
-                Tell us what you need to throw away. We&apos;ll show you how to
-                dispose of it and where to go in the city!
+                Tell us what you need to throw away. We&apos;ll identify it,
+                explain how to dispose of it safely, and point you to Baltimore
+                drop-off options when they apply.
               </p>
             </div>
-            <RecycleEarthIcon className="h-16 w-16 shrink-0 sm:h-20 sm:w-20 md:h-24 md:w-24" />
+            <RecycleEarthIcon className="mt-1 h-[4.25rem] w-[4.25rem] shrink-0 sm:h-24 sm:w-24" />
           </header>
 
           <nav
-            className="mt-auto flex flex-1 flex-col items-center justify-center gap-4 py-8 sm:gap-5 sm:py-10"
+            className="mt-auto flex flex-1 flex-col items-stretch justify-center gap-3.5 py-8 sm:gap-4 sm:py-10"
             aria-label="Choose how to describe your item"
           >
             {homeActions.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
-                className="flex w-full max-w-md min-h-[3.75rem] items-center justify-center rounded-full bg-white px-8 py-4 text-center text-lg font-semibold shadow-[0_8px_24px_rgba(26,61,46,0.32)] transition hover:bg-[#f7f7f5] hover:shadow-[0_10px_28px_rgba(26,61,46,0.38)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-[4.25rem] sm:text-xl"
+                className="flex min-h-[3.5rem] w-full items-center justify-center rounded-full bg-white px-6 py-3.5 text-center text-base font-semibold shadow-[0_8px_24px_rgba(26,61,46,0.32)] transition hover:bg-[#fafaf8] hover:shadow-[0_10px_28px_rgba(26,61,46,0.38)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-h-[3.75rem] sm:text-lg"
                 style={{
                   color: FOREST,
-                  outlineColor: FOREST,
+                  outlineColor: "#1a3d2e",
                 }}
               >
                 {label}

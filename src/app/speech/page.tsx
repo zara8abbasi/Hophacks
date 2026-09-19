@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HopHacksShell } from "@/components/hophacks-shell";
+import { PageCard, PageHeader } from "@/components/page-card";
 import { Button } from "@/components/ui/button";
+import {
+  btnOutlineNeutralClass,
+  btnPrimaryClass,
+  insetPanelClass,
+} from "@/lib/hophacks-ui";
 import { DescriptionClassificationPanel } from "@/components/description-classification-panel";
 import { ClassificationOutcomeActions } from "@/components/classification-outcome-actions";
 import { useDisposalResultNavigation } from "@/hooks/use-disposal-result-navigation";
@@ -344,13 +350,11 @@ export default function SpeechPage() {
 
   return (
     <HopHacksShell showBack>
-      <div className="rounded-2xl border border-white/20 bg-white/95 p-6 text-black shadow-lg sm:p-8">
-        <h1 className="text-2xl font-bold tracking-tight">Use Speech Input</h1>
-        <p className="mt-2 text-sm text-black/70 sm:text-base">
-          Record a short description of what you need to throw away. We transcribe
-          your speech, then identify and classify the item with Grok—same as Type
-          A Description.
-        </p>
+      <PageCard>
+        <PageHeader
+          title="Voice input"
+          description="Record a short description of what you need to throw away. We transcribe your speech, then identify and classify the item with Grok—the same flow as typing a description."
+        />
 
         {sttProvider === "browser" && (
           <p
@@ -365,7 +369,7 @@ export default function SpeechPage() {
         )}
 
         <div
-          className="mt-8 flex flex-col items-center rounded-xl border border-dashed border-black/20 bg-[#e8dcc8]/40 px-6 py-10 text-center"
+          className={`mt-8 flex flex-col items-center px-6 py-10 text-center ${insetPanelClass} border-dashed`}
           aria-live="polite"
         >
           {phase === "idle" && (
@@ -458,7 +462,7 @@ export default function SpeechPage() {
             <Button
               type="button"
               onClick={stopRecording}
-              className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+              className={`flex-1 ${btnPrimaryClass}`}
             >
               Stop recording
             </Button>
@@ -467,7 +471,7 @@ export default function SpeechPage() {
               type="button"
               onClick={startRecording}
               disabled={busy || phase === "unsupported"}
-              className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+              className={`flex-1 ${btnPrimaryClass}`}
             >
               {phase === "transcribing"
                 ? "Transcribing…"
@@ -480,7 +484,7 @@ export default function SpeechPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-11 flex-1 border-black/20 bg-white text-black"
+              className={`flex-1 ${btnOutlineNeutralClass}`}
               onClick={resetFlow}
               disabled={busy}
             >
@@ -488,7 +492,7 @@ export default function SpeechPage() {
             </Button>
           )}
         </div>
-      </div>
+      </PageCard>
     </HopHacksShell>
   );
 }

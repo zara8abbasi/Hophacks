@@ -134,8 +134,10 @@
   --litter-forest: #1a3d2e;
   --litter-mint: #c8e4c4;
   --litter-title-pill: #9fcf9a;
+  --litter-sand: #e8dcc8;
+  --litter-mint-soft: #d4ecd0;
 }
 
 .font-home-display {
-  font-family: var(--font-home-display), var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }

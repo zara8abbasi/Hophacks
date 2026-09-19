@@ -1,3 +1,9 @@
+import { cn } from "@/lib/utils";
+import {
+  classificationPanelClass,
+  insetPanelClass,
+  sectionLabelClass,
+} from "@/lib/hophacks-ui";
 import type { DescriptionClassification } from "@/lib/description-classification";
 
 type DescriptionClassificationPanelProps = {
@@ -28,13 +34,11 @@ export function DescriptionClassificationPanel({
 
       {/* TEMP(slice): remove when product no longer needs on-screen object debug print */}
       <div
-        className="rounded-xl border-2 border-dashed border-[#1a3d2e]/40 bg-[#1a3d2e]/5 px-4 py-4"
+        className={cn(insetPanelClass, "px-4 py-4")}
         data-temporary-slice="grok-object-print"
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#1a3d2e]/70">
-          Temporary — identified object (remove later)
-        </p>
-        <p className="mt-2 text-xl font-bold text-[#1a3d2e]">
+        <p className={sectionLabelClass}>Identified item</p>
+        <p className="mt-2 text-xl font-bold text-[var(--litter-forest)]">
           {classification.objectName}
           {showUncertain ? (
             <span className="ml-2 text-sm font-semibold normal-case text-amber-900">
@@ -44,25 +48,21 @@ export function DescriptionClassificationPanel({
         </p>
         {showUncertain ? (
           <p className="mt-2 text-sm text-black/65">
-            Best guess only — confidence {classification.confidence}%.
+            Best guess — confidence {classification.confidence}%.
           </p>
         ) : null}
       </div>
 
-      <div className="rounded-lg bg-[#1a3d2e]/10 px-4 py-4 text-sm text-[#1a3d2e]">
+      <div className={classificationPanelClass}>
         <p className="font-semibold">Classification</p>
-        <dl className="mt-3 space-y-2">
+        <dl className="mt-3 space-y-3">
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-[#1a3d2e]/70">
-              Category
-            </dt>
-            <dd className="text-base font-medium">{classification.category}</dd>
+            <dt className={sectionLabelClass}>Category</dt>
+            <dd className="mt-0.5 text-base font-medium">{classification.category}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-[#1a3d2e]/70">
-              Class
-            </dt>
-            <dd className="text-base font-medium">{classification.class}</dd>
+            <dt className={sectionLabelClass}>Class</dt>
+            <dd className="mt-0.5 text-base font-medium">{classification.class}</dd>
           </div>
         </dl>
       </div>

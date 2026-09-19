@@ -1,3 +1,4 @@
+import { classificationPanelClass, sectionLabelClass } from "@/lib/hophacks-ui";
 import type { DescriptionClassification } from "@/lib/description-classification";
 import {
   isAtHomeStream,
@@ -21,7 +22,7 @@ export function AtHomeDisposalCard({
         className="rounded-lg border border-amber-300/70 bg-amber-50/80 px-4 py-3 text-sm"
         aria-live="polite"
       >
-        <p className="font-semibold text-[#1a3d2e]">{atHome.headline}</p>
+        <p className="font-semibold text-[var(--litter-forest)]">{atHome.headline}</p>
         <p className="mt-2 text-black/80">{atHome.detail}</p>
       </section>
     );
@@ -43,14 +44,9 @@ export function AtHomeDisposalCard({
               : "At home";
 
   return (
-    <section
-      className="rounded-lg bg-[#1a3d2e]/10 px-4 py-3 text-sm"
-      aria-live="polite"
-    >
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#1a3d2e]/70">
-        At home — {streamLabel}
-      </p>
-      <p className="mt-2 font-semibold text-[#1a3d2e]">{atHome.headline}</p>
+    <section className={`${classificationPanelClass} py-3`} aria-live="polite">
+      <p className={sectionLabelClass}>At home — {streamLabel}</p>
+      <p className="mt-2 font-semibold text-[var(--litter-forest)]">{atHome.headline}</p>
       <p className="mt-2 text-black/80">{atHome.detail}</p>
     </section>
   );

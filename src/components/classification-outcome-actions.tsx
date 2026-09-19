@@ -4,6 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  btnOutlineForestClass,
+  btnOutlineNeutralClass,
+  btnPrimaryClass,
+  insetPanelClass,
+} from "@/lib/hophacks-ui";
+import {
   CLARIFICATION_DONT_KNOW_ANSWER,
   type DescriptionClassification,
 } from "@/lib/description-classification";
@@ -33,7 +39,7 @@ export function ClassificationOutcomeActions({
   if (status === "unsure") {
     return (
       <div
-        className="mt-4 space-y-4 rounded-lg border border-[#1a3d2e]/25 bg-[#e8dcc8]/50 px-4 py-4"
+        className={`mt-4 space-y-4 ${insetPanelClass} px-4 py-4`}
         role="status"
       >
         <p className="text-sm font-medium text-[#1a3d2e]">
@@ -51,7 +57,7 @@ export function ClassificationOutcomeActions({
             variant="outline"
             disabled={busy}
             onClick={() => void onSubmitClarification(CLARIFICATION_DONT_KNOW_ANSWER)}
-            className="h-11 flex-1 border-[#1a3d2e]/30 bg-white text-[#1a3d2e] hover:bg-[#1a3d2e]/5"
+            className={`flex-1 ${btnOutlineForestClass}`}
           >
             I don&apos;t know
           </Button>
@@ -59,7 +65,7 @@ export function ClassificationOutcomeActions({
             type="button"
             onClick={onTryAgain}
             disabled={busy}
-            className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+            className={`flex-1 ${btnPrimaryClass}`}
           >
             {tryAgainLabel}
           </Button>
@@ -93,7 +99,7 @@ export function ClassificationOutcomeActions({
           type="button"
           disabled={busy || !clarificationAnswer.trim()}
           onClick={() => void onSubmitClarification(clarificationAnswer.trim())}
-          className="h-11 flex-1 bg-black text-white hover:bg-black/90 sm:min-w-[10rem]"
+          className={`flex-1 ${btnPrimaryClass} sm:min-w-[10rem]`}
         >
           {busy ? "Classifying…" : "Submit answer"}
         </Button>
@@ -102,7 +108,7 @@ export function ClassificationOutcomeActions({
           variant="outline"
           disabled={busy}
           onClick={() => void onSubmitClarification(CLARIFICATION_DONT_KNOW_ANSWER)}
-          className="h-11 flex-1 border-[#1a3d2e]/30 bg-white text-[#1a3d2e] hover:bg-[#1a3d2e]/5 sm:min-w-[10rem]"
+          className={`flex-1 ${btnOutlineForestClass} sm:min-w-[10rem]`}
         >
           I don&apos;t know
         </Button>
@@ -111,7 +117,7 @@ export function ClassificationOutcomeActions({
           variant="outline"
           onClick={onTryAgain}
           disabled={busy}
-          className="h-11 flex-1 border-black/20 bg-white text-black sm:min-w-[10rem]"
+          className={`flex-1 ${btnOutlineNeutralClass} sm:min-w-[10rem]`}
         >
           {tryAgainLabel}
         </Button>
