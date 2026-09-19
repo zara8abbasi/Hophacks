@@ -8,6 +8,8 @@ import { resolveDisposalMethod } from "@/lib/disposal-method";
 import type { DescriptionClassification } from "@/lib/description-classification";
 import { findNearestDropOffCenter } from "@/lib/nearest-drop-off";
 import { lookupRecyclingSchedule } from "@/lib/recycling-schedule";
+import { evaluateDropOffAvailability } from "@/lib/drop-off-availability";
+import type { DropOffWarning } from "@/lib/drop-off-availability";
 
 export type DisposalGuidanceResponse = {
   disposal: ReturnType<typeof resolveDisposalMethod>;
@@ -22,13 +24,18 @@ export type DisposalGuidanceResponse = {
   nearestCenter:
     | {
         ok: true;
+        objectId: string;
         name: string;
         address: string;
         url: string;
         distanceMiles: number;
         directionsUrl: string;
+        hoursSummary: string | null;
       }
     | { ok: false; message: string };
+  dropOffWarnings: DropOffWarning[];
+  hhwSummary: string | null;
+  dataLimitationNote: string | null;
   location: { displayName: string; lat: number; lng: number } | null;
   dataErrors: string[];
 };
@@ -132,6 +139,10 @@ export async function POST(request: Request) {
   }
 
   let nearestCenter: DisposalGuidanceResponse["nearestCenter"];
+  let dropOffWarnings: DropOffWarning[] = [];
+  let hhwSummary: string | null = null;
+  let dataLimitationNote: string | null = null;
+
   if (centersError || !centers.length) {
     nearestCenter = {
       ok: false,
@@ -144,22 +155,46 @@ export async function POST(request: Request) {
     nearestCenter = nearest
       ? {
           ok: true,
+          objectId: nearest.center.objectId,
           name: nearest.center.name,
           address: nearest.center.address,
           url: nearest.center.url,
           distanceMiles: Math.round(nearest.distanceMiles * 10) / 10,
           directionsUrl: nearest.directionsUrl,
+          hoursSummary: null,
         }
       : {
           ok: false,
           message: "No drop-off centers found in the loaded data.",
         };
+
+    if (nearest) {
+      const classificationText = `${classification.objectName} ${classification.category} ${classification.class}`;
+      const availability = evaluateDropOffAvailability(
+        nearest.center.objectId,
+        nearest.center.name,
+        disposal.method,
+        classificationText
+      );
+      dropOffWarnings = availability.warnings;
+      hhwSummary = availability.hhwSummary;
+      dataLimitationNote = availability.dataLimitationNote;
+      if (nearestCenter.ok) {
+        nearestCenter = {
+          ...nearestCenter,
+          hoursSummary: availability.centerHoursSummary,
+        };
+      }
+    }
   }
 
   const payload: DisposalGuidanceResponse = {
     disposal,
     schedule,
     nearestCenter,
+    dropOffWarnings,
+    hhwSummary,
+    dataLimitationNote,
     location: displayName ? { displayName, lat, lng } : null,
     dataErrors,
   };

@@ -41,7 +41,7 @@ export function resolveDisposalMethod(
       method: "hhw_drop_off",
       headline: "Household hazardous waste — drop-off only",
       detail:
-        "Liquid paint, chemicals, and similar household hazardous waste are not accepted in curbside trash or recycling. Take them to a Baltimore DPW citizen drop-off center (Quarantine Road accepts HHW). Never pour chemicals down drains.",
+        "Liquid paint, chemicals, and similar household hazardous waste are not accepted in curbside trash or recycling. Take them to the Sisson Street RRC on household hazardous waste collection days (first Friday and Saturday, June–December). Never pour chemicals down drains.",
       alsoMentionDropOff: true,
     };
   }

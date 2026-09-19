@@ -1,0 +1,228 @@
+{
+  "sources": [
+    {
+      "id": "drop-off-center-guide",
+      "url": "https://www.baltimorecity.gov/publicworks/trash-recycling/drop-off-center-guide",
+      "fetchedForEncoding": "2026-09-19"
+    },
+    {
+      "id": "household-hazardous-waste",
+      "url": "https://www.baltimorecity.gov/publicworks/recycling-services/household-hazardous-waste-recycling",
+      "fetchedForEncoding": "2026-09-19"
+    },
+    {
+      "id": "hard-to-recycle-items",
+      "url": "https://www.baltimorecity.gov/publicworks/trash-recycling/drop-off-center-guide/hard-to-recycle-items",
+      "fetchedForEncoding": "2026-09-19"
+    },
+    {
+      "id": "residential-drop-off-centers",
+      "url": "https://www.baltimorecity.gov/publicworks/trash-recycling/recycle-drop-off-centers",
+      "fetchedForEncoding": "2026-09-19",
+      "note": "Per-site open days and hours; linked from drop-off center guide."
+    }
+  ],
+  "generalDropOff": {
+    "residentRequirement": "Baltimore City residents with valid IDs only.",
+    "feeNote": "Effective November 1, 2025, a fee of $135 per ton applies to commercial haulers and residents disposing of non-hazardous solid waste at Quarantine Road Landfill. City residents may continue to dispose of recycling, electronics, appliances, and household waste at DPW's five Residential Drop-off Centers at no cost.",
+    "acceptedAtResidentialCenters": [
+      "Household trash",
+      "Furniture and other bulk items",
+      "Appliances",
+      "Scrap metal",
+      "Tires without rims",
+      "Cans",
+      "Glass",
+      "Plastics",
+      "Paper",
+      "Cardboard",
+      "Electronics",
+      "Used motor oil (up to 5 quarts)",
+      "Yard waste that is bagged appropriately",
+      "Oyster shells (Sisson Street Drop-Off Center only)"
+    ],
+    "notAcceptedAtRegularResidentialDropOff": [
+      "Paint",
+      "Solvents",
+      "Pesticides",
+      "Pool chemicals",
+      "Acids",
+      "Caustics",
+      "Gasoline",
+      "Mercury thermometers/thermostats",
+      "Syringes",
+      "Fire extinguishers",
+      "Propane tanks",
+      "Helium tanks",
+      "Batteries",
+      "Fluorescent light bulbs",
+      "Any other solid, liquid, or gaseous substance regulated as hazardous by State or federal law"
+    ],
+    "hhwNote": "Some items may be recycled during household hazardous waste collection days (see hhw)."
+  },
+  "hhw": {
+    "locationName": "Sisson Street RRC",
+    "address": "2840 Sisson Street",
+    "telephone": "(410) 396-7250",
+    "centerObjectId": "8",
+    "scheduleRule": {
+      "months": "June through December",
+      "when": "First Friday and Saturday of each month",
+      "holidayNote": "Dates may be adjusted for holidays."
+    },
+    "publishedDropOffDates2025": [
+      { "label": "August 7th & 8th", "hours": "9AM-7PM" },
+      { "label": "September 4th & 5th", "hours": "9AM-7PM" },
+      { "label": "October 2nd & 3rd", "hours": "9AM-5PM" },
+      { "label": "November 6th & 7th", "hours": "9AM-5PM" },
+      { "label": "December 4th & 5th", "hours": "9AM-5PM" }
+    ],
+    "businesses": "Businesses and commercial users must use a private vendor.",
+    "commercialVehicles": "Commercial vehicles are not permitted.",
+    "packagingRule": "All materials must be in original packaging with manufacturer's label. No unmarked or leaking containers will be accepted.",
+    "acceptable": [
+      "Automotive fluids (antifreeze, transmission and power brake fluid, used motor oil)",
+      "Batteries",
+      "Antifreeze (glycols)",
+      "Household cleaning products",
+      "Fungicides/herbicides",
+      "Insecticides/pesticides",
+      "Oil paint",
+      "Paint thinners",
+      "Pool cleaners",
+      "Pool chemicals",
+      "Propane tanks",
+      "Rust removers",
+      "Solvents",
+      "Fire extinguishers",
+      "Thermometers",
+      "Turpentine (varnishes and stains)",
+      "Fluorescent light bulbs"
+    ],
+    "fluorescentBulbNote": "City strongly urges residents to recycle fluorescent light bulbs at Northwest Residential Recycling Center on household hazardous waste collection days.",
+    "unacceptable": [
+      "Photographic chemicals",
+      "Gasoline",
+      "Kerosene",
+      "Asbestos",
+      "Ammunition",
+      "Explosives",
+      "Acids (e.g. Sulfuric Acid)",
+      "Industrial wastes",
+      "Medical wastes",
+      "Radioactive materials"
+    ]
+  },
+  "hardToRecycle": [
+    {
+      "id": "hard_plastic",
+      "title": "Hard Plastic",
+      "guidance": "Hard plastic items like buckets, laundry baskets, and water bottles cannot be left at the curb. Take them to a Citizen Drop-Off Center in the container labeled Rigid Plastics.",
+      "dropOffScope": "citizen_drop_off_centers"
+    },
+    {
+      "id": "scrap_metal_white_goods",
+      "title": "Scrap Metal and White Goods",
+      "guidance": "Large appliances (white goods) and scrap metal should be taken to drop-off centers for recycling.",
+      "dropOffScope": "citizen_drop_off_centers"
+    },
+    {
+      "id": "hhw",
+      "title": "Household Hazardous Waste",
+      "guidance": "Items like bleach, paint, and batteries must not go in the trash; follow hazardous waste safety and recycling rules.",
+      "dropOffScope": "hhw_events_sisson"
+    },
+    {
+      "id": "food_scraps",
+      "title": "Food Scraps",
+      "guidance": "Consider composting or food scrap recycling instead of landfill disposal.",
+      "dropOffScope": "not_drop_off_centers"
+    },
+    {
+      "id": "tires",
+      "title": "Tires",
+      "guidance": "All tires must be off rim. Up to four off-rim tires per month at an accepting recycling center, or set out four for bulk trash collection (call 311).",
+      "dropOffScope": "residential_centers_except_sisson",
+      "excludedCenterObjectIds": ["8"]
+    },
+    {
+      "id": "textiles",
+      "title": "Textiles",
+      "guidance": "Used clothes, shoes, towels, and sheets at any of DPW's five Residential Drop-Off Centers.",
+      "dropOffScope": "five_residential_centers"
+    },
+    {
+      "id": "motor_oil",
+      "title": "Motor Oil",
+      "guidance": "Up to five quarts of used motor oil at any of Baltimore's five Residential Recycling Centers.",
+      "dropOffScope": "five_residential_centers"
+    },
+    {
+      "id": "mattresses",
+      "title": "Mattresses and Box Springs",
+      "guidance": "Drop off clean and dry mattresses and box springs for recycling.",
+      "dropOffScope": "five_residential_centers"
+    },
+    {
+      "id": "electronics",
+      "title": "Electronics",
+      "guidance": "eCycling for computers, TVs, and similar electronics at drop-off centers.",
+      "dropOffScope": "five_residential_centers"
+    }
+  ],
+  "residentialCentersHours": [
+    {
+      "objectId": "6",
+      "name": "Quarantine Road Landfill & Residential Recycling Center",
+      "address": "6100 Quarantine Road",
+      "phone": "410-396-3772",
+      "openDays": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+      "hours": { "open": "09:00", "close": "15:30" },
+      "notes": ["Residential and landfill use hours listed as Monday–Saturday 9:00 am–3:30 pm on city site."]
+    },
+    {
+      "objectId": "5",
+      "name": "Western Residential Recycling Center (Reedbird)",
+      "address": "701 Reedbird Ave.",
+      "phone": "410-396-3367",
+      "openDays": ["saturday"],
+      "hours": { "open": "09:00", "close": "19:00" },
+      "notes": [
+        "Open on a limited schedule due to Facility Modernization Project (city site)."
+      ]
+    },
+    {
+      "objectId": "7",
+      "name": "Eastern Residential Recycling Center",
+      "address": "6101 Bowley's Lane",
+      "phone": "410-396-9950",
+      "openDays": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+      "hours": { "open": "09:00", "close": "19:00" }
+    },
+    {
+      "objectId": "8",
+      "name": "Sisson Street Residential Recycling Center",
+      "address": "2840 Sisson Street",
+      "phone": "410-396-7250",
+      "openDays": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+      "hours": { "open": "09:00", "close": "19:00" },
+      "siteRules": {
+        "acceptsHhwOnScheduledDays": true,
+        "doesNotAccept": ["Tires without rims"]
+      }
+    },
+    {
+      "objectId": "3",
+      "name": "Northwest Transfer Station",
+      "address": "5030 Reisterstown Road",
+      "phone": "410-396-2706",
+      "openDays": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+      "hours": { "open": "07:00", "close": "17:00" },
+      "notes": ["Small haulers can drop off here.", "Does not accept listed C&D inert materials and hazardous C&D per city site."]
+    }
+  ],
+  "dataLimitations": {
+    "perSiteDailyMaterialCalendar": "City pages do not publish a per-site daily calendar of which materials are accepted on which weekdays. Warnings use published open days/hours plus HHW and hard-to-recycle rules.",
+    "openBaltimoreExtraSites": "Open Baltimore CSV includes York Rd, Lewin, and Calverton substations; the residential hours page lists five named centers only — no hours published for those substation object IDs."
+  }
+}
