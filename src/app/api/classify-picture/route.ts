@@ -56,6 +56,7 @@ export async function POST(request: Request) {
     };
     return NextResponse.json(payload);
   } catch (err) {
+    console.error("[classify-picture] Grok vision failed:", err);
     const message =
       err instanceof Error
         ? err.message

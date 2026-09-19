@@ -68,6 +68,9 @@ export default function PicturePage() {
   const [classifyErrorMessage, setClassifyErrorMessage] = useState<
     string | null
   >(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const classifyRequestIdRef = useRef(0);
+  const attemptedClassifyUrlRef = useRef<string | null>(null);
 
   const resetClassification = useCallback(() => {
     setClassifyStatus("idle");
@@ -94,46 +97,62 @@ export default function PicturePage() {
   }, []);
 
   const classifyCapturedImage = useCallback(async (dataUrl: string) => {
-    setClassifyStatus("loading");
-    setClassification(null);
-    setSource(null);
-    setClassifyErrorMessage(null);
+      const requestId = ++classifyRequestIdRef.current;
+      setClassifyStatus("loading");
+      setClassification(null);
+      setSource(null);
+      setClassifyErrorMessage(null);
 
-    try {
-      const res = await fetch("/api/classify-picture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl }),
-      });
+      try {
+        const res = await fetch("/api/classify-picture", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: dataUrl }),
+        });
 
-      const data = (await res.json()) as ClassifyPictureResponse | { error?: string };
+        let data: ClassifyPictureResponse | { error?: string };
+        try {
+          data = (await res.json()) as ClassifyPictureResponse | { error?: string };
+        } catch {
+          if (requestId !== classifyRequestIdRef.current) return;
+          setClassifyStatus("api_error");
+          setClassifyErrorMessage(
+            "The server returned an unexpected response. Try capture again."
+          );
+          return;
+        }
 
-      if (!res.ok) {
+        if (requestId !== classifyRequestIdRef.current) return;
+
+        if (!res.ok) {
+          setClassifyStatus("api_error");
+          const errPayload = data as { error?: string };
+          setClassifyErrorMessage(
+            typeof errPayload.error === "string" && errPayload.error
+              ? errPayload.error
+              : "We couldn’t classify that photo. Check your connection and try again."
+          );
+          return;
+        }
+
+        const success = data as ClassifyPictureResponse;
+        setClassification(success.classification);
+        setSource(success.source);
+        setClassifyStatus("success");
+      } catch {
+        if (requestId !== classifyRequestIdRef.current) return;
         setClassifyStatus("api_error");
-        const errPayload = data as { error?: string };
         setClassifyErrorMessage(
-          typeof errPayload.error === "string" && errPayload.error
-            ? errPayload.error
-            : "We couldn’t classify that photo. Check your connection and try again."
+          "Something went wrong while contacting the server. Try again in a moment."
         );
-        return;
       }
-
-      const success = data as ClassifyPictureResponse;
-      setClassification(success.classification);
-      setSource(success.source);
-      setClassifyStatus("success");
-    } catch {
-      setClassifyStatus("api_error");
-      setClassifyErrorMessage(
-        "Something went wrong while contacting the server. Try again in a moment."
-      );
-    }
   }, []);
 
   const startCamera = useCallback(async () => {
     setErrorMessage(null);
     setPreviewUrl(null);
+    setVideoReady(false);
+    attemptedClassifyUrlRef.current = null;
     resetClassification();
     setCameraState("loading");
     try {
@@ -153,25 +172,56 @@ export default function PicturePage() {
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
     if (!video || cameraState !== "active") return;
+
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    if (width < 8 || height < 8) {
+      setErrorMessage(
+        "Camera is still warming up. Wait until the live preview looks clear, then tap Capture photo again."
+      );
+      return;
+    }
+
+    setErrorMessage(null);
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, width, height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    stopStream();
     setPreviewUrl(dataUrl);
     setCameraState("captured");
-    stopStream();
-    void classifyCapturedImage(dataUrl);
-  }, [cameraState, stopStream, classifyCapturedImage]);
+  }, [cameraState, stopStream]);
+
+  useEffect(() => {
+    if (!previewUrl || cameraState !== "captured") return;
+    if (attemptedClassifyUrlRef.current === previewUrl) return;
+    attemptedClassifyUrlRef.current = previewUrl;
+    void classifyCapturedImage(previewUrl);
+  }, [previewUrl, cameraState, classifyCapturedImage]);
 
   useEffect(() => {
     const video = videoRef.current;
     const stream = streamRef.current;
     if (cameraState === "active" && video && stream) {
-      void attachStreamToVideo(video, stream);
+      setVideoReady(false);
+      const onReady = () => {
+        if (video.videoWidth >= 8 && video.videoHeight >= 8) {
+          setVideoReady(true);
+        }
+      };
+      video.addEventListener("loadedmetadata", onReady);
+      video.addEventListener("resize", onReady);
+      void attachStreamToVideo(video, stream).then(onReady);
+      return () => {
+        video.removeEventListener("loadedmetadata", onReady);
+        video.removeEventListener("resize", onReady);
+      };
     }
+    setVideoReady(false);
+    return undefined;
   }, [cameraState, attachStreamToVideo]);
 
   useEffect(() => {
@@ -183,18 +233,30 @@ export default function PicturePage() {
       <div className="rounded-2xl border border-white/20 bg-white/95 p-6 text-black shadow-lg sm:p-8">
         <h1 className="text-2xl font-bold tracking-tight">Take A Picture</h1>
         <p className="mt-2 text-sm text-black/70 sm:text-base">
-          Position the item in frame and capture a photo. We&apos;ll identify
-          the object with Grok and classify it for Baltimore disposal rules next.
+          Position the item in frame and tap <strong>Capture photo</strong>.
+          The live preview stays on your device; only the captured JPEG is sent
+          to Grok vision on our server to identify the object and classify it for
+          Baltimore disposal rules.
         </p>
 
         <div className="mt-6 overflow-hidden rounded-xl border border-black/10 bg-black/5">
           {previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previewUrl}
-              alt="Captured preview of your item"
-              className="aspect-[4/3] w-full object-cover"
-            />
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt="Captured preview of your item"
+                className="aspect-[4/3] w-full object-cover"
+              />
+              {classifyStatus === "loading" && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center bg-black/45 px-4 text-center text-sm font-medium text-white"
+                  aria-live="polite"
+                >
+                  Identifying with Grok…
+                </div>
+              )}
+            </div>
           ) : cameraState === "loading" ? (
             <div className="flex aspect-[4/3] w-full items-center justify-center bg-black/10 text-sm text-black/70">
               Opening camera…
@@ -225,9 +287,17 @@ export default function PicturePage() {
           </p>
         )}
 
-        {classifyStatus === "loading" && (
+        {cameraState === "active" && (
+          <p className="mt-4 text-sm text-black/60">
+            Preview is local; <span className="font-medium text-black/80">Capture</span>{" "}
+            sends the photo to Grok.
+            {!videoReady ? " Waiting for camera to be ready…" : null}
+          </p>
+        )}
+
+        {classifyStatus === "loading" && !previewUrl && (
           <p className="mt-4 text-sm text-black/60" aria-live="polite">
-            Identifying your item with Grok…
+            Identifying with Grok…
           </p>
         )}
 
@@ -298,9 +368,10 @@ export default function PicturePage() {
             <Button
               type="button"
               onClick={capturePhoto}
-              className="h-11 flex-1 bg-black text-white hover:bg-black/90"
+              disabled={!videoReady}
+              className="h-11 flex-1 bg-black text-white hover:bg-black/90 disabled:opacity-50"
             >
-              Capture photo
+              {videoReady ? "Capture photo" : "Preparing camera…"}
             </Button>
           ) : null}
           {cameraState === "captured" ? (
