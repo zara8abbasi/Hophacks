@@ -61,13 +61,13 @@ const homeActions = [
 
 export default function Home() {
   return (
-    <HopHacksShell className="max-w-xl justify-center py-8 sm:py-10">
+    <HopHacksShell className="max-w-5xl justify-center py-6 sm:py-8">
       <div
         className="w-full rounded-[1.25rem] p-3 sm:rounded-[1.5rem] sm:p-4"
         style={{ backgroundColor: FOREST }}
       >
         <div
-          className="flex min-h-[min(32rem,78dvh)] flex-col rounded-2xl px-5 py-7 sm:min-h-[34rem] sm:rounded-[1.25rem] sm:px-8 sm:py-9"
+          className="font-home-display flex min-h-[min(26rem,58dvh)] flex-col rounded-2xl px-5 py-7 sm:min-h-[min(28rem,62dvh)] sm:rounded-[1.25rem] sm:px-10 sm:py-9"
           style={{ backgroundColor: MINT }}
         >
           <header className="flex shrink-0 items-start justify-between gap-3 sm:gap-4">
