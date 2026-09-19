@@ -15,7 +15,7 @@ export function HopHacksShell({
   return (
     <div className="relative flex min-h-full flex-1 flex-col">
       <div
-        className="pointer-events-none fixed inset-0 -z-20 bg-gradient-to-b from-[#5f7260] via-[#7f9a7a] to-[#a8bc94]"
+        className="pointer-events-none fixed inset-0 -z-20 bg-gradient-to-b from-[#3d4b40] via-[#526a56] to-[#6f8676]"
         aria-hidden
       />
       <div
