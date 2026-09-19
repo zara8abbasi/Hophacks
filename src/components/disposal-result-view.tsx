@@ -93,6 +93,7 @@ export function DisposalResultView({ session }: DisposalResultViewProps) {
 
       <BaltimoreDisposalGuidance
         classification={classification}
+        origin={origin}
         onBaltimoreLocationConfirmed={() => {
           setBaltimoreConfirmed(true);
           setOutsideBaltimoreGps(false);

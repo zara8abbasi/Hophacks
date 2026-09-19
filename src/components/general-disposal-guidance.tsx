@@ -3,10 +3,12 @@ import { resolveGeneralDisposal } from "@/lib/general-disposal";
 
 type GeneralDisposalGuidanceProps = {
   classification: DescriptionClassification;
+  showBaltimoreHint?: boolean;
 };
 
 export function GeneralDisposalGuidance({
   classification,
+  showBaltimoreHint = true,
 }: GeneralDisposalGuidanceProps) {
   const general = resolveGeneralDisposal(classification);
 
@@ -27,10 +29,12 @@ export function GeneralDisposalGuidance({
         <p className="font-semibold text-[#1a3d2e]">{general.headline}</p>
         <p className="mt-2 text-black/80">{general.detail}</p>
       </section>
-      <p className="text-xs text-black/55">
-        In Baltimore City? Add your address below for nearest drop-off centers,
-        hours, and curbside collection days when they apply.
-      </p>
+      {showBaltimoreHint ? (
+        <p className="text-xs text-black/55">
+          In Baltimore City? Add your address below for nearest drop-off
+          centers, hours, and curbside collection days when they apply.
+        </p>
+      ) : null}
     </div>
   );
 }
