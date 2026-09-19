@@ -1,12 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import proj4 from "proj4";
 
 const DATA_DIR = path.join(process.cwd(), "data");
-
-/** Maryland State Plane NAD83 (US foot) — Baltimore City open data x/y */
-const MD_STATE_PLANE =
-  "+proj=lcc +lat_1=38.3 +lat_2=39.45 +lat_0=38 +lon_0=-77 +x_0=400000 +y_0=0 +datum=NAD83 +units=us-ft +no_defs";
+const COORDS_OVERLAY = "trash-drop-off-centers-coords.json";
 
 export type DropOffCenter = {
   objectId: string;
@@ -77,9 +73,21 @@ function readCsvFile(filename: string): string[][] {
   return rows;
 }
 
-function statePlaneToWgs84(x: number, y: number): { lat: number; lng: number } {
-  const [lng, lat] = proj4(MD_STATE_PLANE, "WGS84", [x, y]) as [number, number];
-  return { lat, lng };
+function loadGeocodedOverlay(): Map<string, { lat: number; lng: number }> {
+  const filePath = path.join(DATA_DIR, COORDS_OVERLAY);
+  if (!fs.existsSync(filePath)) return new Map();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8")) as Array<{
+      objectId: string;
+      lat: number;
+      lng: number;
+    }>;
+    return new Map(
+      parsed.map((row) => [String(row.objectId), { lat: row.lat, lng: row.lng }])
+    );
+  } catch {
+    return new Map();
+  }
 }
 
 export function loadDropOffCenters(): {
@@ -121,21 +129,33 @@ export function loadDropOffCenters(): {
       };
     }
 
+    const geocoded = loadGeocodedOverlay();
     const centers: DropOffCenter[] = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      const x = Number.parseFloat(row[idx.x] ?? "");
-      const y = Number.parseFloat(row[idx.y] ?? "");
-      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-      const { lat, lng } = statePlaneToWgs84(x, y);
+      const objectId = row[idx.objectId] ?? String(i);
+      const overlay = geocoded.get(String(objectId));
+      if (!overlay) {
+        continue;
+      }
       centers.push({
-        objectId: row[idx.objectId] ?? String(i),
+        objectId,
         address: row[idx.address] ?? "",
         name: row[idx.name] ?? "",
         url: idx.url >= 0 ? row[idx.url] ?? "" : "",
-        lat,
-        lng,
+        lat: overlay.lat,
+        lng: overlay.lng,
       });
+    }
+    if (!centers.length && rows.length > 1) {
+      return {
+        centers: [],
+        error: {
+          kind: "parse_error",
+          message:
+            "Drop-off centers need lat/lng from trash-drop-off-centers-coords.json (geocoded from Address).",
+        },
+      };
     }
     return { centers, error: null };
   } catch (err) {
