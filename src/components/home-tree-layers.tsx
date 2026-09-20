@@ -3,49 +3,28 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   getDisposalTreeLayerCount,
-  MAX_TREE_LAYERS,
   TREE_LAYERS_CHANGED_EVENT,
 } from "@/lib/disposal-tree-layers";
 
-/** Index 0 = front (darkest); higher index = farther back (paler). */
-const DEPTH_PLANES = [
-  {
-    trees: 24,
-    seed: 53,
-    baseLift: 0.02,
-    heightScale: 0.5,
-    fill: "#050b14",
-  },
-  {
-    trees: 22,
-    seed: 37,
-    baseLift: 0.05,
-    heightScale: 0.43,
-    fill: "#1e3a47",
-  },
-  {
-    trees: 20,
-    seed: 23,
-    baseLift: 0.09,
-    heightScale: 0.36,
-    fill: "#5f7d85",
-  },
-  {
-    trees: 18,
-    seed: 11,
-    baseLift: 0.13,
-    heightScale: 0.3,
-    fill: "#a8c1c7",
-  },
-] as const;
+/** Foreground pine row — darkest green only (no pale depth planes). */
+const DARK_PINE = {
+  fill: "#1a4638",
+  trees: 26,
+  seed: 71,
+  baseLift: 0.015,
+  heightScale: 0.52,
+} as const;
 
 function pseudo(seed: number): number {
   const x = Math.sin(seed * 127.1 + seed * 311.7) * 43758.5453;
   return x - Math.floor(x);
 }
 
-/** Stepped pine ridge anchored at the bottom of the viewBox. */
-function buildPineRidgePath(
+/**
+ * Jagged stepped pine silhouettes anchored at the bottom of the viewBox,
+ * styled like a dense foreground conifer row.
+ */
+function buildDarkPineForegroundPath(
   w: number,
   h: number,
   treeCount: number,
@@ -63,29 +42,34 @@ function buildPineRidgePath(
     const r1 = pseudo(seed + i * 5.7 + 1);
     const r2 = pseudo(seed + i * 7.3 + 2);
     const r3 = pseudo(seed + i * 9.1 + 3);
-    const peakH = (0.55 + r0 * 0.45) * h * heightScale;
-    const center = baseX + step * (0.38 + r1 * 0.24);
-    const halfW = step * (0.34 + r2 * 0.12);
+    const r4 = pseudo(seed + i * 11.3 + 4);
+    const peakH = (0.5 + r0 * 0.5) * h * heightScale;
+    const center = baseX + step * (0.32 + r1 * 0.28);
+    const halfW = step * (0.38 + r2 * 0.14);
 
-    const tiers = 4;
+    const tiers = 5;
     for (let t = tiers; t >= 0; t--) {
       const tierRatio = t / tiers;
       const y = ground - peakH * tierRatio;
-      const inset = halfW * (0.15 + tierRatio * 0.85);
-      const jag = (r3 - 0.5) * step * 0.04 * (1 - tierRatio);
+      const inset = halfW * (0.12 + tierRatio * 0.88);
+      const jag = (r3 - 0.5) * step * 0.055 * (1 - tierRatio * 0.85);
+      const skew = (r4 - 0.5) * step * 0.03;
+
       if (t === tiers) {
-        d += ` L ${center + jag} ${ground - peakH}`;
+        d += ` L ${center + jag + skew} ${ground - peakH}`;
       } else {
         const left = center - inset + jag;
-        const right = center + inset + jag;
+        const right = center + inset + jag - skew * 0.5;
         d += ` L ${left} ${y}`;
         if (t > 0) {
+          const midBump = center + (r3 - 0.5) * inset * 0.35;
+          d += ` L ${midBump} ${y - peakH * 0.018}`;
           d += ` L ${right} ${y}`;
         }
       }
     }
 
-    const footR = baseX + step * (0.92 + r2 * 0.06);
+    const footR = baseX + step * (0.9 + r2 * 0.08);
     d += ` L ${footR} ${ground}`;
   }
 
@@ -93,35 +77,24 @@ function buildPineRidgePath(
   return d;
 }
 
-function PineSilhouettePlane({ layerIndex }: { layerIndex: number }) {
-  const plane =
-    DEPTH_PLANES[layerIndex] ?? DEPTH_PLANES[MAX_TREE_LAYERS - 1];
+function DarkPineForeground() {
   const path = useMemo(
     () =>
-      buildPineRidgePath(
+      buildDarkPineForegroundPath(
         1200,
         900,
-        plane.trees,
-        plane.seed,
-        plane.baseLift,
-        plane.heightScale
+        DARK_PINE.trees,
+        DARK_PINE.seed,
+        DARK_PINE.baseLift,
+        DARK_PINE.heightScale
       ),
-    [plane]
+    []
   );
-
-  const depthFromFront = layerIndex;
-  const heightPct =
-    42 + (MAX_TREE_LAYERS - 1 - depthFromFront) * 7;
-  const liftPx = depthFromFront * 5;
 
   return (
     <div
       className="absolute inset-x-0 bottom-0"
-      style={{
-        height: `${heightPct}%`,
-        transform: `translateY(${-liftPx}px)`,
-        zIndex: MAX_TREE_LAYERS - layerIndex,
-      }}
+      style={{ height: "46%" }}
     >
       <svg
         className="h-full w-full"
@@ -129,7 +102,7 @@ function PineSilhouettePlane({ layerIndex }: { layerIndex: number }) {
         preserveAspectRatio="none"
         aria-hidden
       >
-        <path d={path} fill={plane.fill} />
+        <path d={path} fill={DARK_PINE.fill} />
       </svg>
     </div>
   );
@@ -161,12 +134,7 @@ export function HomeTreeLayers() {
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       aria-hidden
     >
-      {Array.from({ length: count }, (_, renderOrder) => {
-        const layerIndex = count - 1 - renderOrder;
-        return (
-          <PineSilhouettePlane key={layerIndex} layerIndex={layerIndex} />
-        );
-      })}
+      <DarkPineForeground />
     </div>
   );
 }
