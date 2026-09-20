@@ -15,6 +15,7 @@ import { BaltimoreDisposalGuidance } from "@/components/baltimore-disposal-guida
 import { BaltimoreGuidanceDisplay } from "@/components/baltimore-guidance-display";
 import { AtHomeDisposalCard } from "@/components/at-home-disposal-card";
 import { GeneralDisposalGuidance } from "@/components/general-disposal-guidance";
+import { VoiceRecycleReadout } from "@/components/voice-recycle-readout";
 import type { DisposalResultSession } from "@/lib/disposal-result-session";
 import type { LocationGuidanceSession } from "@/lib/location-guidance-session";
 
@@ -76,6 +77,10 @@ export function DisposalResultView({ session }: DisposalResultViewProps) {
           </>
         }
       />
+
+      {origin === "/speech" ? (
+        <VoiceRecycleReadout classification={classification} autoPlay />
+      ) : null}
 
       <BaltimoreDisposalGuidance
         classification={classification}

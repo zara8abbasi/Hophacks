@@ -9,6 +9,8 @@ import {
   clearDisposalResultSession,
   markDisposalIdentificationConfirmed,
 } from "@/lib/disposal-result-session";
+import { recycleReadoutSentence } from "@/lib/recycle-readout-sentence";
+import { speakRecycleReadout } from "@/lib/recycle-readout-client";
 import {
   btnOutlineForestClass,
   btnPrimaryClass,
@@ -38,6 +40,9 @@ export function IdentifyConfirmView({ session }: IdentifyConfirmViewProps) {
 
   function handleYes() {
     markDisposalIdentificationConfirmed();
+    if (origin === "/speech") {
+      void speakRecycleReadout(recycleReadoutSentence(classification));
+    }
     router.push("/result");
   }
 
