@@ -1,5 +1,5 @@
 export const TREE_LAYERS_STORAGE_KEY = "hophacks-disposal-tree-layers";
-export const MAX_TREE_LAYERS = 4;
+export const MAX_TREE_LAYERS = 3;
 
 export const TREE_LAYERS_CHANGED_EVENT = "hophacks-tree-layers-changed";
 
@@ -9,7 +9,11 @@ function readCount(): number {
   if (raw === null) return 0;
   const n = Number.parseInt(raw, 10);
   if (!Number.isFinite(n) || n < 0) return 0;
-  return Math.min(n, MAX_TREE_LAYERS);
+  const clamped = Math.min(n, MAX_TREE_LAYERS);
+  if (clamped !== n) {
+    localStorage.setItem(TREE_LAYERS_STORAGE_KEY, String(clamped));
+  }
+  return clamped;
 }
 
 export function getDisposalTreeLayerCount(): number {

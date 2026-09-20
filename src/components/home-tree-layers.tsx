@@ -7,7 +7,7 @@ import {
   TREE_LAYERS_CHANGED_EVENT,
 } from "@/lib/disposal-tree-layers";
 
-/** Back (0) → front (3): palest behind, darkest in front. */
+/** Back (0) → front (2): palest behind, darkest in front. */
 const DEPTH_PLANES = [
   {
     trees: 18,
@@ -28,13 +28,6 @@ const DEPTH_PLANES = [
     seed: 47,
     baseLift: 0.04,
     heightScale: 0.44,
-    fill: "#4a6b58",
-  },
-  {
-    trees: 24,
-    seed: 67,
-    baseLift: 0.02,
-    heightScale: 0.5,
     fill: "#1e3d2e",
   },
 ] as const;
