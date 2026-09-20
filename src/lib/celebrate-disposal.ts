@@ -1,4 +1,5 @@
 import confetti from "canvas-confetti";
+import { incrementDisposalTreeLayers } from "@/lib/disposal-tree-layers";
 
 const DISPOSAL_COLORS = ["#c8e4c4", "#9fcf9a", "#1a3d2e", "#e8dcc8", "#ffffff"];
 
@@ -37,4 +38,6 @@ export function celebrateDisposal(): void {
     }
   };
   frame();
+
+  incrementDisposalTreeLayers();
 }
