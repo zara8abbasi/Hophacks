@@ -11,7 +11,7 @@ const bodyCopy = `33% of all municipal waste generated globally is handled in an
 
 export default function WhyPage() {
   return (
-    <HopHacksShell showBack className="max-w-2xl sm:max-w-3xl">
+    <HopHacksShell showBack>
       <div
         className="w-full rounded-[1.35rem] p-3 shadow-[0_20px_50px_rgba(10,24,18,0.45)] sm:rounded-[1.5rem] sm:p-3.5"
         style={{ backgroundColor: BORDER_FOREST }}
@@ -33,7 +33,7 @@ export default function WhyPage() {
           />
 
           <article
-            className="relative z-10 px-6 py-10 text-center sm:px-10 sm:py-12"
+            className="relative z-10 px-8 py-12 text-center sm:px-12 sm:py-16"
           >
             <h1
               className="font-home-display text-[1.65rem] font-bold tracking-tight sm:text-3xl md:text-[2rem]"

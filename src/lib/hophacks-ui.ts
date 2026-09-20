@@ -1,10 +1,18 @@
 /** Shared HopHacks sage/forest UI tokens (Tailwind class fragments). */
 export const forest = "#1a3d2e" as const;
 
+/** Inner-route column — matches the home card’s generous max width. */
+export const innerPageColumnClass =
+  "relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 py-8 sm:max-w-3xl sm:px-10 sm:py-12";
+
+/** Home keeps its own frame sizing via className overrides on this base. */
+export const homePageColumnClass =
+  "relative z-10 mx-auto flex w-full max-w-xl flex-1 flex-col px-5 py-8 sm:px-8 sm:py-12";
+
 export const pageCardClass =
   "rounded-2xl border border-white/25 bg-white/[0.97] text-[#1a2e24] shadow-[0_16px_48px_rgba(15,30,22,0.22)] backdrop-blur-[2px]";
 
-export const pageCardPaddingClass = "p-6 sm:p-8";
+export const pageCardPaddingClass = "p-8 sm:p-10 lg:p-12";
 
 export const pageTitleClass =
   "font-home-display text-2xl font-bold tracking-tight text-[var(--litter-forest)] sm:text-[1.65rem]";

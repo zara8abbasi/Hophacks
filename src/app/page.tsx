@@ -61,7 +61,7 @@ const homeActions = [
 
 export default function Home() {
   return (
-    <HopHacksShell className="max-w-2xl justify-center py-6 sm:max-w-3xl sm:py-10">
+    <HopHacksShell home className="max-w-2xl justify-center py-6 sm:max-w-3xl sm:py-10">
       <div
         className="relative w-full rounded-[1.35rem] p-3 shadow-[0_20px_50px_rgba(10,24,18,0.35)] sm:rounded-[1.5rem] sm:p-3.5"
         style={{ backgroundColor: FOREST }}

@@ -1,17 +1,21 @@
 import Link from "next/link";
 import { HomeTreeLayers } from "@/components/home-tree-layers";
+import { homePageColumnClass, innerPageColumnClass } from "@/lib/hophacks-ui";
 import { cn } from "@/lib/utils";
 
 type HopHacksShellProps = {
   children: React.ReactNode;
   className?: string;
   showBack?: boolean;
+  /** Home framed card; omit on inner routes so they share the wider column. */
+  home?: boolean;
 };
 
 export function HopHacksShell({
   children,
   className,
   showBack = false,
+  home = false,
 }: HopHacksShellProps) {
   return (
     <div className="relative flex min-h-full flex-1 flex-col">
@@ -30,7 +34,7 @@ export function HopHacksShell({
       <HomeTreeLayers />
       <div
         className={cn(
-          "relative z-10 mx-auto flex w-full max-w-xl flex-1 flex-col px-5 py-8 sm:px-8 sm:py-12",
+          home ? homePageColumnClass : innerPageColumnClass,
           className
         )}
       >

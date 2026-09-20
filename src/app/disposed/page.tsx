@@ -7,7 +7,7 @@ export default function DisposedPage() {
   return (
     <HopHacksShell>
       <div
-        className="rounded-2xl border border-[var(--litter-mint)]/35 bg-gradient-to-b from-[var(--litter-forest)] via-[#234a38] to-[#1a3d2e] px-6 py-10 text-center text-white shadow-[0_16px_48px_rgba(15,30,22,0.35)] sm:px-10 sm:py-12"
+        className="rounded-2xl border border-[var(--litter-mint)]/35 bg-gradient-to-b from-[var(--litter-forest)] via-[#234a38] to-[#1a3d2e] px-8 py-12 text-center text-white shadow-[0_16px_48px_rgba(15,30,22,0.35)] sm:px-12 sm:py-16"
         role="status"
       >
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--litter-mint)]">
