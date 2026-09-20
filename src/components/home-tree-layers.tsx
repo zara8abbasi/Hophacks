@@ -7,28 +7,35 @@ import {
   TREE_LAYERS_CHANGED_EVENT,
 } from "@/lib/disposal-tree-layers";
 
-/** Back (0) → front (2): palest behind, darkest in front. */
+/** Index 0 = front (darkest); higher index = farther back (paler). */
 const DEPTH_PLANES = [
   {
-    trees: 18,
-    seed: 11,
-    baseLift: 0.08,
-    heightScale: 0.32,
-    fill: "#b8cfc2",
-  },
-  {
-    trees: 20,
-    seed: 29,
-    baseLift: 0.06,
-    heightScale: 0.38,
-    fill: "#7a9d88",
+    trees: 24,
+    seed: 53,
+    baseLift: 0.02,
+    heightScale: 0.5,
+    fill: "#050b14",
   },
   {
     trees: 22,
-    seed: 47,
-    baseLift: 0.04,
-    heightScale: 0.44,
-    fill: "#1e3d2e",
+    seed: 37,
+    baseLift: 0.05,
+    heightScale: 0.43,
+    fill: "#1e3a47",
+  },
+  {
+    trees: 20,
+    seed: 23,
+    baseLift: 0.09,
+    heightScale: 0.36,
+    fill: "#5f7d85",
+  },
+  {
+    trees: 18,
+    seed: 11,
+    baseLift: 0.13,
+    heightScale: 0.3,
+    fill: "#a8c1c7",
   },
 ] as const;
 
@@ -102,14 +109,18 @@ function PineSilhouettePlane({ layerIndex }: { layerIndex: number }) {
     [plane]
   );
 
-  const bottomOffset = layerIndex * 2;
+  const depthFromFront = layerIndex;
+  const heightPct =
+    42 + (MAX_TREE_LAYERS - 1 - depthFromFront) * 7;
+  const liftPx = depthFromFront * 5;
 
   return (
     <div
       className="absolute inset-x-0 bottom-0"
       style={{
-        height: `${42 + layerIndex * 6}%`,
-        transform: `translateY(${bottomOffset}px)`,
+        height: `${heightPct}%`,
+        transform: `translateY(${-liftPx}px)`,
+        zIndex: MAX_TREE_LAYERS - layerIndex,
       }}
     >
       <svg
@@ -150,9 +161,12 @@ export function HomeTreeLayers() {
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       aria-hidden
     >
-      {Array.from({ length: count }, (_, i) => (
-        <PineSilhouettePlane key={i} layerIndex={i} />
-      ))}
+      {Array.from({ length: count }, (_, renderOrder) => {
+        const layerIndex = count - 1 - renderOrder;
+        return (
+          <PineSilhouettePlane key={layerIndex} layerIndex={layerIndex} />
+        );
+      })}
     </div>
   );
 }

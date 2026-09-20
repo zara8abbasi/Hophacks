@@ -1,5 +1,5 @@
 export const TREE_LAYERS_STORAGE_KEY = "hophacks-disposal-tree-layers";
-export const MAX_TREE_LAYERS = 3;
+export const MAX_TREE_LAYERS = 4;
 
 export const TREE_LAYERS_CHANGED_EVENT = "hophacks-tree-layers-changed";
 
