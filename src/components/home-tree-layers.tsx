@@ -7,62 +7,35 @@ import {
   TREE_LAYERS_CHANGED_EVENT,
 } from "@/lib/disposal-tree-layers";
 
-/** Depth plane styling: back (0) → front (4). */
+/** Back (0) → front (3): palest behind, darkest in front. */
 const DEPTH_PLANES = [
   {
-    ridge: 0.38,
-    trees: 14,
-    seed: 11,
-    fillTop: "rgba(196, 218, 208, 0.55)",
-    fillMid: "rgba(142, 178, 162, 0.72)",
-    fillBottom: "rgba(98, 138, 122, 0.88)",
-    mist: "rgba(232, 243, 238, 0.42)",
-    blur: 2.5,
-    opacity: 0.92,
-  },
-  {
-    ridge: 0.48,
-    trees: 16,
-    seed: 23,
-    fillTop: "rgba(168, 198, 186, 0.5)",
-    fillMid: "rgba(118, 158, 142, 0.78)",
-    fillBottom: "rgba(72, 108, 94, 0.9)",
-    mist: "rgba(220, 236, 228, 0.35)",
-    blur: 1.8,
-    opacity: 0.94,
-  },
-  {
-    ridge: 0.58,
     trees: 18,
-    seed: 37,
-    fillTop: "rgba(130, 168, 152, 0.45)",
-    fillMid: "rgba(82, 124, 108, 0.82)",
-    fillBottom: "rgba(45, 78, 64, 0.92)",
-    mist: "rgba(200, 224, 214, 0.28)",
-    blur: 1.2,
-    opacity: 0.96,
+    seed: 11,
+    baseLift: 0.08,
+    heightScale: 0.32,
+    fill: "#b8cfc2",
   },
   {
-    ridge: 0.7,
     trees: 20,
-    seed: 53,
-    fillTop: "rgba(88, 128, 112, 0.5)",
-    fillMid: "rgba(42, 72, 58, 0.88)",
-    fillBottom: "rgba(22, 48, 38, 0.95)",
-    mist: "rgba(180, 210, 198, 0.22)",
-    blur: 0.6,
-    opacity: 0.97,
+    seed: 29,
+    baseLift: 0.06,
+    heightScale: 0.38,
+    fill: "#7a9d88",
   },
   {
-    ridge: 0.82,
     trees: 22,
-    seed: 71,
-    fillTop: "rgba(52, 88, 72, 0.55)",
-    fillMid: "rgba(24, 52, 40, 0.92)",
-    fillBottom: "rgba(10, 28, 22, 0.98)",
-    mist: "rgba(160, 190, 178, 0.15)",
-    blur: 0,
-    opacity: 1,
+    seed: 47,
+    baseLift: 0.04,
+    heightScale: 0.44,
+    fill: "#4a6b58",
+  },
+  {
+    trees: 24,
+    seed: 67,
+    baseLift: 0.02,
+    heightScale: 0.5,
+    fill: "#1e3d2e",
   },
 ] as const;
 
@@ -71,14 +44,16 @@ function pseudo(seed: number): number {
   return x - Math.floor(x);
 }
 
+/** Stepped pine ridge anchored at the bottom of the viewBox. */
 function buildPineRidgePath(
   w: number,
   h: number,
   treeCount: number,
   seed: number,
-  ridgeRatio: number
+  baseLift: number,
+  heightScale: number
 ): string {
-  const ground = h * ridgeRatio;
+  const ground = h * (1 - baseLift);
   const step = w / treeCount;
   let d = `M 0 ${h} L 0 ${ground}`;
 
@@ -87,41 +62,61 @@ function buildPineRidgePath(
     const r0 = pseudo(seed + i * 3.1);
     const r1 = pseudo(seed + i * 5.7 + 1);
     const r2 = pseudo(seed + i * 7.3 + 2);
-    const peakH = (0.12 + r0 * 0.28) * h;
-    const widthBias = 0.28 + r1 * 0.22;
-    const peakX = baseX + step * (0.35 + r2 * 0.3);
-    const leftX = baseX + step * 0.08;
-    const rightX = baseX + step * 0.92;
-    const shoulderL = baseX + step * widthBias;
-    const shoulderR = baseX + step * (1 - widthBias);
+    const r3 = pseudo(seed + i * 9.1 + 3);
+    const peakH = (0.55 + r0 * 0.45) * h * heightScale;
+    const center = baseX + step * (0.38 + r1 * 0.24);
+    const halfW = step * (0.34 + r2 * 0.12);
 
-    d += ` L ${leftX} ${ground - peakH * 0.22}`;
-    d += ` L ${shoulderL} ${ground - peakH * 0.55}`;
-    d += ` L ${peakX} ${ground - peakH}`;
-    d += ` L ${shoulderR} ${ground - peakH * 0.5}`;
-    d += ` L ${rightX} ${ground - peakH * 0.18}`;
+    const tiers = 4;
+    for (let t = tiers; t >= 0; t--) {
+      const tierRatio = t / tiers;
+      const y = ground - peakH * tierRatio;
+      const inset = halfW * (0.15 + tierRatio * 0.85);
+      const jag = (r3 - 0.5) * step * 0.04 * (1 - tierRatio);
+      if (t === tiers) {
+        d += ` L ${center + jag} ${ground - peakH}`;
+      } else {
+        const left = center - inset + jag;
+        const right = center + inset + jag;
+        d += ` L ${left} ${y}`;
+        if (t > 0) {
+          d += ` L ${right} ${y}`;
+        }
+      }
+    }
+
+    const footR = baseX + step * (0.92 + r2 * 0.06);
+    d += ` L ${footR} ${ground}`;
   }
 
   d += ` L ${w} ${ground} L ${w} ${h} Z`;
   return d;
 }
 
-function MistForestPlane({ layerIndex }: { layerIndex: number }) {
+function PineSilhouettePlane({ layerIndex }: { layerIndex: number }) {
   const plane =
     DEPTH_PLANES[layerIndex] ?? DEPTH_PLANES[MAX_TREE_LAYERS - 1];
   const path = useMemo(
-    () => buildPineRidgePath(1200, 900, plane.trees, plane.seed, plane.ridge),
+    () =>
+      buildPineRidgePath(
+        1200,
+        900,
+        plane.trees,
+        plane.seed,
+        plane.baseLift,
+        plane.heightScale
+      ),
     [plane]
   );
-  const gradId = `tree-grad-${layerIndex}`;
-  const mistId = `tree-mist-${layerIndex}`;
+
+  const bottomOffset = layerIndex * 2;
 
   return (
     <div
-      className="absolute inset-0"
+      className="absolute inset-x-0 bottom-0"
       style={{
-        opacity: plane.opacity,
-        filter: plane.blur > 0 ? `blur(${plane.blur}px)` : undefined,
+        height: `${42 + layerIndex * 6}%`,
+        transform: `translateY(${bottomOffset}px)`,
       }}
     >
       <svg
@@ -130,25 +125,7 @@ function MistForestPlane({ layerIndex }: { layerIndex: number }) {
         preserveAspectRatio="none"
         aria-hidden
       >
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={plane.fillTop} />
-            <stop offset="42%" stopColor={plane.fillMid} />
-            <stop offset="100%" stopColor={plane.fillBottom} />
-          </linearGradient>
-          <linearGradient id={mistId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={plane.mist} />
-            <stop offset="55%" stopColor="rgba(255,255,255,0)" />
-          </linearGradient>
-        </defs>
-        <path d={path} fill={`url(#${gradId})`} />
-        <rect
-          x="0"
-          y="0"
-          width="1200"
-          height="900"
-          fill={`url(#${mistId})`}
-        />
+        <path d={path} fill={plane.fill} />
       </svg>
     </div>
   );
@@ -180,17 +157,9 @@ export function HomeTreeLayers() {
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       aria-hidden
     >
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-[#dfe8e2]/55 via-[#8fa898]/12 to-transparent"
-        aria-hidden
-      />
       {Array.from({ length: count }, (_, i) => (
-        <MistForestPlane key={i} layerIndex={i} />
+        <PineSilhouettePlane key={i} layerIndex={i} />
       ))}
-      <div
-        className="absolute inset-0 bg-gradient-to-b from-[#eef4f1]/70 via-transparent to-[#0a1410]/25"
-        aria-hidden
-      />
     </div>
   );
 }

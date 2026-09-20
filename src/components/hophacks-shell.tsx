@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HomeTreeLayers } from "@/components/home-tree-layers";
 import { cn } from "@/lib/utils";
 
 type HopHacksShellProps = {
@@ -26,9 +27,10 @@ export function HopHacksShell({
         }}
         aria-hidden
       />
+      <HomeTreeLayers />
       <div
         className={cn(
-          "relative mx-auto flex w-full max-w-xl flex-1 flex-col px-5 py-8 sm:px-8 sm:py-12",
+          "relative z-10 mx-auto flex w-full max-w-xl flex-1 flex-col px-5 py-8 sm:px-8 sm:py-12",
           className
         )}
       >
