@@ -113,6 +113,16 @@ export default function Home() {
               </Link>
             ))}
           </nav>
+
+          <p className="shrink-0 pb-1 text-center">
+            <Link
+              href="/why"
+              className="text-sm font-semibold underline decoration-[var(--litter-forest)]/35 underline-offset-4 transition hover:decoration-[var(--litter-forest)]/65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{ color: FOREST, outlineColor: "#1a3d2e" }}
+            >
+              Why this matters
+            </Link>
+          </p>
         </div>
       </div>
     </HopHacksShell>
