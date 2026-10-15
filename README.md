@@ -2,6 +2,8 @@
 
 HopHacks is a Baltimore-focused web app that helps residents figure out how to dispose of everyday items and find nearby recycling and drop-off centers using Open Baltimore data.
 
+It used image detection to identify the user's trash and aids the user in disposal in multipler different ways. Text to speech, written descriptions, and image detection are the options the user can use. Open Baltimore data is used to ensure accuracy for city disposal guidelines and locations of disposal centers.
+
 ## Run locally
 
 ```bash
